@@ -2,10 +2,12 @@ package com.uvg.cc3087.eztunez.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val EzBackground = Color(0xFF0E0E10)
+val EzSurface = Color(0xFF242328)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val EzTeal = Color(0xFF50D0C8)
+val EzTealDark = Color(0xFF007D73)
+
+val EzTextPrimary = Color(0xFFF4F1F5)
+val EzTextSecondary = Color(0xFF969199)
+val EzDivider = Color(0xFF464149)
