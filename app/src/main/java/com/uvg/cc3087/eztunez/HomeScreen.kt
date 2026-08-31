@@ -49,7 +49,7 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "TunePro",
+                        text = "EzTunez",
                         color = HomeText,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp

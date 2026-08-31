@@ -91,8 +91,7 @@ fun App() {
             }
 
             AppScreen.TUNE -> {
-                // Temporary until the tuner screen is created
-                HomeScreen(
+                TuneScreen(
                     onNavigate = {
                         currentScreen = it
                     }

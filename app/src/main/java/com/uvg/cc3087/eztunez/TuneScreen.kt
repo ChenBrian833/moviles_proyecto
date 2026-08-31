@@ -1,4 +1,4 @@
-/*
+
 package com.uvg.cc3087.eztunez
 
 import androidx.compose.foundation.Canvas
@@ -86,12 +86,8 @@ fun TuneScreen(
         it.id == selectedStringId
     }
 
-    /*
-     * This will eventually come from your
-     * microphone / pitch detection.
-     *
-     * For now 0 means perfectly in tune.
-     */
+    //This will eventually come from  microphone / pitch detection.
+
     var centsOffset by remember {
         mutableFloatStateOf(0f)
     }
@@ -551,5 +547,5 @@ private fun TuningMeter(
     }
 }
 
-*/
+
 //
