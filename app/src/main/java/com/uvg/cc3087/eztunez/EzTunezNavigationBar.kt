@@ -38,6 +38,10 @@ fun EzTunezNavigationBar(
                     contentDescription = "Tune"
                 )
             },
+
+
+
+
             label = {
                 Text("Home")
             },

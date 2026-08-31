@@ -49,7 +49,7 @@ fun App() {
     }
 
     var currentScreen by remember {
-        mutableStateOf(AppScreen.PRESETS)
+        mutableStateOf(AppScreen.HOME)
     }
 
     LaunchedEffect(Unit) {
@@ -81,11 +81,18 @@ fun App() {
                 )
             }
 
-            // Until we build these screens:
-            AppScreen.HOME,
-            AppScreen.TUNE -> {
 
-                TuningPresetsScreen(
+            AppScreen.HOME -> {
+                HomeScreen(
+                    onNavigate = {
+                        currentScreen = it
+                    }
+                )
+            }
+
+            AppScreen.TUNE -> {
+                // Temporary until the tuner screen is created
+                HomeScreen(
                     onNavigate = {
                         currentScreen = it
                     }
