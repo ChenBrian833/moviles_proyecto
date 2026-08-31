@@ -38,6 +38,10 @@ fun EzTunezNavigationBar(
                     contentDescription = "Tune"
                 )
             },
+
+
+
+
             label = {
                 Text("Home")
             },
@@ -107,3 +111,4 @@ private fun navigationColors(): NavigationBarItemColors {
         unselectedTextColor = Color(0xFF99959E)
     )
 }
+//
