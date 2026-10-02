@@ -22,6 +22,13 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.cos
 import kotlin.math.sin
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+
 private val TuneBackground = Color(0xFF0D0D0F)
 private val TuneHeader = Color(0xFF1B191E)
 private val TuneCard = Color(0xFF242328)
@@ -42,6 +49,37 @@ data class GuitarString(
 fun TuneScreen(
     onNavigate: (AppScreen) -> Unit
 ) {
+
+    val context = LocalContext.current
+
+    var hasMicrophonePermission by remember {
+
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract =
+                ActivityResultContracts.RequestPermission()
+        ) { granted ->
+
+            hasMicrophonePermission = granted
+        }
+
+    LaunchedEffect(Unit) {
+
+        if (!hasMicrophonePermission) {
+
+            permissionLauncher.launch(
+                Manifest.permission.RECORD_AUDIO
+            )
+        }
+    }
 
     val guitarStrings = remember {
         listOf(
@@ -86,13 +124,56 @@ fun TuneScreen(
         it.id == selectedStringId
     }
 
-    //This will eventually come from  microphone / pitch detection.
+    /*
+ * Real microphone pitch detection
+ */
 
-    var centsOffset by remember {
-        mutableFloatStateOf(0f)
+    var detectedPitch by remember {
+        mutableStateOf<DetectedPitch?>(null)
     }
 
-    val isInTune = centsOffset in -5f..5f
+    val detector = remember(context) {
+
+        GuitarPitchDetector(
+            context = context
+        ) { pitch ->
+
+            /*
+             * Audio detection runs on a background thread.
+             * Move the Compose state update to the main thread.
+             */
+            android.os.Handler(
+                android.os.Looper.getMainLooper()
+            ).post {
+                detectedPitch = pitch
+            }
+        }
+    }
+
+    DisposableEffect(hasMicrophonePermission) {
+
+        if (hasMicrophonePermission) {
+            detector.start()
+        }
+
+        onDispose {
+            detector.stop()
+        }
+    }
+
+    val centsOffset =
+        detectedPitch?.cents ?: 0f
+
+    val isInTune =
+        detectedPitch != null &&
+                centsOffset in -5f..5f
+
+    val detectionConfidence =
+        detectedPitch?.probability?.coerceIn(
+            0f,
+            1f
+        ) ?: 0f
+
 
     Scaffold(
         containerColor = TuneBackground,
@@ -150,7 +231,7 @@ fun TuneScreen(
              */
 
             Text(
-                text = selectedString.note,
+                text = detectedPitch?.note ?: "--",
                 fontSize = 64.sp,
                 fontWeight = FontWeight.Bold,
                 color = TuneText
@@ -161,7 +242,10 @@ fun TuneScreen(
             )
 
             Text(
-                text = "%.1f Hz".format(selectedString.frequency),
+                text = detectedPitch?.let {
+                    "%.1f Hz".format(it.frequency)
+                } ?: "-- Hz",
+
                 style = MaterialTheme.typography.titleLarge,
                 color = TuneSecondaryText
             )
@@ -190,15 +274,27 @@ fun TuneScreen(
              */
 
             Text(
-                text = if (isInTune) {
-                    "In Tune ✓"
-                } else if (centsOffset < 0) {
-                    "Tune Up"
-                } else {
-                    "Tune Down"
+                text = when {
+
+                    detectedPitch == null -> {
+                        "Play a string"
+                    }
+
+                    isInTune -> {
+                        "In Tune ✓"
+                    }
+
+                    centsOffset < 0 -> {
+                        "Tune Up"
+                    }
+
+                    else -> {
+                        "Tune Down"
+                    }
                 },
 
                 style = MaterialTheme.typography.headlineSmall,
+
                 fontWeight = FontWeight.Bold,
 
                 color = if (isInTune) {
@@ -213,7 +309,12 @@ fun TuneScreen(
             )
 
             Text(
-                text = "Perfect pitch offset: %.1f cents".format(centsOffset),
+                text = if (detectedPitch != null) {
+                    "Perfect pitch offset: %.1f cents".format(centsOffset)
+                } else {
+                    "Listening..."
+                },
+
                 style = MaterialTheme.typography.bodyLarge,
                 color = TuneSecondaryText
             )
@@ -253,14 +354,7 @@ fun TuneScreen(
                                 selected =
                                     guitarString.id == selectedStringId,
                                 onClick = {
-                                    selectedStringId =
-                                        guitarString.id
-
-                                    /*
-                                     * Reset simulated pitch when
-                                     * selecting another string.
-                                     */
-                                    centsOffset = 0f
+                                    selectedStringId = guitarString.id
                                 }
                             )
                         }
@@ -275,7 +369,9 @@ fun TuneScreen(
                      * in the prototype.
                      */
                     LinearProgressIndicator(
-                        progress = { 0.54f },
+                        progress = {
+                            detectionConfidence
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp),
@@ -289,7 +385,7 @@ fun TuneScreen(
                     )
 
                     Text(
-                        text = "54%",
+                        text = "${(detectionConfidence * 100).toInt()}%",
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.End,
                         style = MaterialTheme.typography.bodyMedium,
@@ -299,36 +395,7 @@ fun TuneScreen(
                 }
             }
 
-            /*
-             * TEMPORARY SIMULATION CONTROLS
-             *
-             * These let you test the tuning meter before
-             * microphone detection is implemented.
-             */
 
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
-
-            Text(
-                text = "Pitch simulation",
-                style = MaterialTheme.typography.labelLarge,
-                color = TuneSecondaryText
-            )
-
-            Slider(
-                value = centsOffset,
-                onValueChange = {
-                    centsOffset = it
-                },
-                valueRange = -50f..50f,
-
-                colors = SliderDefaults.colors(
-                    thumbColor = TuneTeal,
-                    activeTrackColor = TuneTeal,
-                    inactiveTrackColor = TuneControl
-                )
-            )
         }
     }
 }
