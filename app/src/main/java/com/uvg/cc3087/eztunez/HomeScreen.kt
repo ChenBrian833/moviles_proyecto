@@ -27,7 +27,8 @@ private val HomeSecondary = Color(0xFF99959E)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onNavigate: (AppScreen) -> Unit
+    onNavigate: (AppScreen) -> Unit,
+    onStartTuning: (TuningMode) -> Unit
 ) {
 
     val snackbarHostState = remember {
@@ -233,7 +234,7 @@ fun HomeScreen(
                 symbol = "♩",
                 selected = true,
                 onClick = {
-                    onNavigate(AppScreen.TUNE)
+                    onStartTuning(TuningMode.AUTO)
                 }
             )
 
@@ -248,7 +249,7 @@ fun HomeScreen(
                 description = "Select and tune strings individually",
                 symbol = "〰",
                 onClick = {
-                    onNavigate(AppScreen.TUNE)
+                    onStartTuning(TuningMode.MANUAL)
                 }
             )
 

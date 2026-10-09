@@ -4,289 +4,134 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import androidx.core.content.ContextCompat
-import be.tarsos.dsp.pitch.PitchDetector
-import be.tarsos.dsp.pitch.Yin
 import kotlin.concurrent.thread
-import kotlin.math.ln
-import kotlin.math.roundToInt
-
-data class DetectedPitch(
-    val frequency: Float,
-    val note: String,
-    val cents: Float,
-    val probability: Float
-)
 
 class GuitarPitchDetector(
     private val context: Context,
     private val onPitchDetected: (DetectedPitch?) -> Unit
 ) {
-
-    companion object {
-        private const val SAMPLE_RATE = 44100
-        private const val BUFFER_SIZE = 4096
-    }
-
-    private var audioRecord: AudioRecord? = null
+    @Volatile private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
-
-    @Volatile
-    private var isRunning = false
-
-    /*
-     * TarsosDSP YIN detector.
-     */
-    private val pitchDetector: PitchDetector =
-        Yin(
-            SAMPLE_RATE.toFloat(),
-            BUFFER_SIZE
-        )
+    @Volatile private var isRunning = false
 
     fun start() {
-
-        if (isRunning) {
-            return
-        }
-
-        /*
-         * Never access the microphone unless
-         * Android has granted permission.
-         */
-        if (
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.RECORD_AUDIO
+        if (isRunning || ContextCompat.checkSelfPermission(
+                context, Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+        ) return
 
-        val minimumBufferSize =
-            AudioRecord.getMinBufferSize(
-                SAMPLE_RATE,
-                AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT
-            )
-
-        if (minimumBufferSize <= 0) {
-            return
-        }
-
-        /*
-         * AudioRecord works with bytes while our
-         * processing buffer contains 16-bit samples.
-         */
-        val audioBufferSize =
-            maxOf(
-                minimumBufferSize,
-                BUFFER_SIZE * 2
-            )
-
-        audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            audioBufferSize
-        )
-
-        if (
-            audioRecord?.state !=
-            AudioRecord.STATE_INITIALIZED
-        ) {
-            audioRecord?.release()
-            audioRecord = null
-            return
-        }
-
+        val record = openRecorder() ?: return
+        audioRecord = record
         isRunning = true
-
-        audioRecord?.startRecording()
-
-        recordingThread = thread(
-            start = true,
-            name = "EzTunez-Microphone"
-        ) {
-
-            readMicrophone()
+        recordingThread = thread(start = true, name = "EzTunez-Microphone") {
+            readMicrophone(record)
         }
     }
 
-    private fun readMicrophone() {
-
-        val shortBuffer =
-            ShortArray(BUFFER_SIZE)
-
-        val floatBuffer =
-            FloatArray(BUFFER_SIZE)
-
-        while (isRunning) {
-
-            val record =
-                audioRecord ?: break
-
-            val samplesRead =
-                record.read(
-                    shortBuffer,
-                    0,
-                    BUFFER_SIZE
-                )
-
-            if (samplesRead <= 0) {
-                continue
-            }
-
-            /*
-             * Ignore partial buffers for now.
-             *
-             * YIN expects the buffer size it was
-             * configured with.
-             */
-            if (samplesRead < BUFFER_SIZE) {
-                continue
-            }
-
-            /*
-             * Convert Android PCM 16-bit samples:
-             *
-             * -32768 ... 32767
-             *
-             * into floats approximately:
-             *
-             * -1.0 ... 1.0
-             */
-            for (i in 0 until BUFFER_SIZE) {
-
-                floatBuffer[i] =
-                    shortBuffer[i] / 32768f
-            }
-
-            analyzeBuffer(floatBuffer)
-        }
-    }
-
-    private fun analyzeBuffer(
-        buffer: FloatArray
-    ) {
-
-        val result =
-            pitchDetector.getPitch(buffer)
-
-        val frequency =
-            result.pitch
-
-        /*
-         * -1 means no usable pitch was found.
-         *
-         * We also reject weak detections.
-         */
-        if (
-            !result.isPitched ||
-            frequency <= 0f ||
-            result.probability < 0.80f
-        ) {
-
-            onPitchDetected(null)
-            return
-        }
-
-        /*
-         * Guitar range with some margin.
-         *
-         * Standard guitar is roughly
-         * E2 (82 Hz) through E4 (330 Hz).
-         */
-        if (
-            frequency < 60f ||
-            frequency > 400f
-        ) {
-            return
-        }
-
-        onPitchDetected(
-            convertFrequency(
-                frequency = frequency,
-                probability = result.probability
-            )
+    private fun openRecorder(): AudioRecord? {
+        val minimum = AudioRecord.getMinBufferSize(
+            GuitarSignalAnalyzer.SAMPLE_RATE,
+            AudioFormat.CHANNEL_IN_MONO,
+            AudioFormat.ENCODING_PCM_16BIT
         )
+        if (minimum <= 0) return null
+        val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val supportsRaw = manager.getProperty(
+            AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED
+        ) == "true"
+        // MIC is the capture path already verified on the user's device.
+        // Alternative sources are only initialization fallbacks, never the default.
+        val sources = buildList {
+            add(MediaRecorder.AudioSource.MIC)
+            if (supportsRaw) add(MediaRecorder.AudioSource.UNPROCESSED)
+            add(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+        }
+
+        for (source in sources) {
+            var record: AudioRecord? = null
+            try {
+                record = AudioRecord(
+                    source, GuitarSignalAnalyzer.SAMPLE_RATE,
+                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                    maxOf(minimum, GuitarSignalAnalyzer.WINDOW_SIZE * 4)
+                )
+                if (record.state == AudioRecord.STATE_INITIALIZED) {
+                    record.startRecording()
+                    if (record.recordingState == AudioRecord.RECORDSTATE_RECORDING) return record
+                }
+            } catch (_: IllegalArgumentException) {
+                // Try the next source if this device does not support the preferred one.
+            } catch (_: IllegalStateException) {
+            } catch (_: SecurityException) {
+                record?.release()
+                return null
+            }
+            record?.release()
+        }
+        return null
+    }
+
+    private fun readMicrophone(initialRecord: AudioRecord) {
+        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
+        val shorts = ShortArray(GuitarSignalAnalyzer.HOP_SIZE)
+        val samples = FloatArray(GuitarSignalAnalyzer.HOP_SIZE)
+        var analyzer = GuitarSignalAnalyzer()
+        var record = initialRecord
+        var filled = 0
+        var recoveries = 0
+        while (isRunning) {
+            val count = record.read(shorts, filled, shorts.size - filled)
+            if (!isRunning) break
+            if (count < 0) {
+                onPitchDetected(null)
+                // A dead AudioRecord otherwise loops forever without hearing anything.
+                if (count != AudioRecord.ERROR_DEAD_OBJECT || recoveries >= 2) break
+                record.release()
+                val replacement = openRecorder() ?: break
+                // stop() can run while the replacement is being opened.
+                audioRecord = replacement
+                if (!isRunning) {
+                    replacement.release()
+                    audioRecord = null
+                    return
+                }
+                record = replacement
+                analyzer = GuitarSignalAnalyzer()
+                filled = 0
+                recoveries++
+                continue
+            }
+            if (count == 0) continue
+            filled += count
+            if (filled < shorts.size) continue
+            filled = 0
+            recoveries = 0
+            for (i in shorts.indices) samples[i] = shorts[i] / 32768f
+            onPitchDetected(analyzer.analyze(samples))
+        }
+        if (isRunning) {
+            isRunning = false
+            onPitchDetected(null)
+        }
     }
 
     fun stop() {
-
         isRunning = false
-
         try {
             audioRecord?.stop()
         } catch (_: IllegalStateException) {
         }
-
+        try {
+            recordingThread?.join(300)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
         audioRecord?.release()
         audioRecord = null
-
         recordingThread = null
     }
-}
-
-
-/*
- * Convert frequency into:
- *
- * 82.41 Hz
- *      ↓
- * E2
- *      ↓
- * cents away from E2
- */
-private fun convertFrequency(
-    frequency: Float,
-    probability: Float
-): DetectedPitch {
-
-    val exactMidi =
-        69.0 +
-                12.0 *
-                (
-                        ln(frequency / 440.0) /
-                                ln(2.0)
-                        )
-
-    val nearestMidi =
-        exactMidi.roundToInt()
-
-    val cents =
-        (
-                (exactMidi - nearestMidi) *
-                        100.0
-                ).toFloat()
-
-    val noteNames = arrayOf(
-        "C",
-        "C#",
-        "D",
-        "D#",
-        "E",
-        "F",
-        "F#",
-        "G",
-        "G#",
-        "A",
-        "A#",
-        "B"
-    )
-
-    val noteIndex =
-        ((nearestMidi % 12) + 12) % 12
-
-    val octave =
-        nearestMidi / 12 - 1
-
-    return DetectedPitch(
-        frequency = frequency,
-        note = "${noteNames[noteIndex]}$octave",
-        cents = cents,
-        probability = probability
-    )
 }

@@ -52,6 +52,8 @@ fun App() {
         mutableStateOf(AppScreen.HOME)
     }
 
+    var tuningMode by remember { mutableStateOf(TuningMode.AUTO) }
+
     LaunchedEffect(Unit) {
         delay(1500)
         showLoadingScreen = false
@@ -86,12 +88,17 @@ fun App() {
                 HomeScreen(
                     onNavigate = {
                         currentScreen = it
+                    },
+                    onStartTuning = { mode ->
+                        tuningMode = mode
+                        currentScreen = AppScreen.TUNE
                     }
                 )
             }
 
             AppScreen.TUNE -> {
                 TuneScreen(
+                    mode = tuningMode,
                     onNavigate = {
                         currentScreen = it
                     }

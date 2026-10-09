@@ -1,6 +1,8 @@
 
 package com.uvg.cc3087.eztunez
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,15 +40,10 @@ private val TuneText = Color(0xFFF4F1F5)
 private val TuneSecondaryText = Color(0xFF99959E)
 private val TuneMeterInactive = Color(0xFF464149)
 
-data class GuitarString(
-    val id: Int,
-    val note: String,
-    val frequency: Float
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TuneScreen(
+    mode: TuningMode = TuningMode.AUTO,
     onNavigate: (AppScreen) -> Unit
 ) {
 
@@ -81,98 +78,33 @@ fun TuneScreen(
         }
     }
 
-    val guitarStrings = remember {
-        listOf(
-            GuitarString(
-                id = 1,
-                note = "E2",
-                frequency = 82.4f
-            ),
-            GuitarString(
-                id = 2,
-                note = "A2",
-                frequency = 110.0f
-            ),
-            GuitarString(
-                id = 3,
-                note = "D3",
-                frequency = 146.8f
-            ),
-            GuitarString(
-                id = 4,
-                note = "G3",
-                frequency = 196.0f
-            ),
-            GuitarString(
-                id = 5,
-                note = "B3",
-                frequency = 246.9f
-            ),
-            GuitarString(
-                id = 6,
-                note = "E4",
-                frequency = 329.6f
-            )
-        )
-    }
+    val guitarStrings = standardGuitarStrings
+    val tracker = remember(mode) { TuningTracker(mode) }
+    var tuningState by remember(tracker) { mutableStateOf(tracker.state) }
+    val selectedString = tuningState.selectedString
+    val selectedStringId = selectedString.id
+    val detectedPitch = tuningState.pitch
+    val centsOffset = tuningState.cents
+    val isInTune = tuningState.isInTune
+    val detectionConfidence = detectedPitch?.probability?.coerceIn(0f, 1f) ?: 0f
 
-    var selectedStringId by remember {
-        mutableIntStateOf(1)
-    }
-
-    val selectedString = guitarStrings.first {
-        it.id == selectedStringId
-    }
-
-    /*
- * Real microphone pitch detection
- */
-
-    var detectedPitch by remember {
-        mutableStateOf<DetectedPitch?>(null)
-    }
-
-    val detector = remember(context) {
-
-        GuitarPitchDetector(
-            context = context
-        ) { pitch ->
-
-            /*
-             * Audio detection runs on a background thread.
-             * Move the Compose state update to the main thread.
-             */
-            android.os.Handler(
-                android.os.Looper.getMainLooper()
-            ).post {
-                detectedPitch = pitch
+    DisposableEffect(context, hasMicrophonePermission, tracker) {
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        var active = true
+        val detector = GuitarPitchDetector(context) { pitch ->
+            handler.post {
+                if (active) {
+                    tuningState = tracker.update(pitch, android.os.SystemClock.elapsedRealtime())
+                }
             }
         }
-    }
-
-    DisposableEffect(hasMicrophonePermission) {
-
-        if (hasMicrophonePermission) {
-            detector.start()
-        }
-
+        if (hasMicrophonePermission) detector.start()
         onDispose {
+            active = false
             detector.stop()
+            handler.removeCallbacksAndMessages(null)
         }
     }
-
-    val centsOffset =
-        detectedPitch?.cents ?: 0f
-
-    val isInTune =
-        detectedPitch != null &&
-                centsOffset in -5f..5f
-
-    val detectionConfidence =
-        detectedPitch?.probability?.coerceIn(
-            0f,
-            1f
-        ) ?: 0f
 
 
     Scaffold(
@@ -191,7 +123,7 @@ fun TuneScreen(
                         )
 
                         Text(
-                            text = "Standard",
+                            text = "Standard · ${if (mode == TuningMode.AUTO) "Auto Tune" else "Manual Tune"}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TuneSecondaryText
                         )
@@ -231,7 +163,7 @@ fun TuneScreen(
              */
 
             Text(
-                text = detectedPitch?.note ?: "--",
+                text = selectedString.note,
                 fontSize = 64.sp,
                 fontWeight = FontWeight.Bold,
                 color = TuneText
@@ -243,7 +175,7 @@ fun TuneScreen(
 
             Text(
                 text = detectedPitch?.let {
-                    "%.1f Hz".format(it.frequency)
+                    "${it.note} · %.1f Hz".format(it.frequency)
                 } ?: "-- Hz",
 
                 style = MaterialTheme.typography.titleLarge,
@@ -260,6 +192,7 @@ fun TuneScreen(
 
             TuningMeter(
                 centsOffset = centsOffset,
+                hasSignal = detectedPitch != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
@@ -310,7 +243,7 @@ fun TuneScreen(
 
             Text(
                 text = if (detectedPitch != null) {
-                    "Perfect pitch offset: %.1f cents".format(centsOffset)
+                    "${selectedString.note} offset: %.1f cents".format(centsOffset)
                 } else {
                     "Listening..."
                 },
@@ -353,8 +286,9 @@ fun TuneScreen(
                                 note = guitarString.note,
                                 selected =
                                     guitarString.id == selectedStringId,
+                                enabled = mode == TuningMode.MANUAL,
                                 onClick = {
-                                    selectedStringId = guitarString.id
+                                    tuningState = tracker.selectString(guitarString.id)
                                 }
                             )
                         }
@@ -365,8 +299,7 @@ fun TuneScreen(
                     )
 
                     /*
-                     * Simulated accuracy/progress shown
-                     * in the prototype.
+                     * Confidence reported by Tarsos for the retained reading.
                      */
                     LinearProgressIndicator(
                         progress = {
@@ -404,6 +337,7 @@ fun TuneScreen(
 private fun GuitarStringButton(
     note: String,
     selected: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit
 ) {
 
@@ -411,6 +345,7 @@ private fun GuitarStringButton(
         modifier = Modifier
             .size(48.dp)
             .clickable(
+                enabled = enabled,
                 onClick = onClick
             ),
 
@@ -445,8 +380,15 @@ private fun GuitarStringButton(
 @Composable
 private fun TuningMeter(
     centsOffset: Float,
+    hasSignal: Boolean,
     modifier: Modifier = Modifier
 ) {
+    // A damped spring interpolates audio frames without overshoot or abrupt jumps.
+    val needleOffset by animateFloatAsState(
+        targetValue = centsOffset.coerceIn(-50f, 50f),
+        animationSpec = spring(dampingRatio = 1f, stiffness = 180f),
+        label = "Tuning needle"
+    )
 
     Canvas(
         modifier = modifier
@@ -553,7 +495,7 @@ private fun TuningMeter(
          * +50 cents = right
          */
         val safeOffset =
-            centsOffset.coerceIn(
+            needleOffset.coerceIn(
                 -50f,
                 50f
             )
@@ -583,7 +525,7 @@ private fun TuningMeter(
                     needleLength
 
         drawLine(
-            color = TuneTeal,
+            color = if (hasSignal) TuneTeal else TuneMeterInactive,
 
             start = Offset(
                 centerX,
@@ -604,7 +546,7 @@ private fun TuningMeter(
          * Center pivot.
          */
         drawCircle(
-            color = TuneTeal,
+            color = if (hasSignal) TuneTeal else TuneMeterInactive,
             radius = 12f,
             center = Offset(
                 centerX,
