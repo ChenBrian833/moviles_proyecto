@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -31,7 +32,10 @@ import kotlin.math.sin
 
 @Composable
 fun LoadingScreen() {
-    val teal = Color(0xFF50D0C8)
+    val teal = MaterialTheme.colorScheme.primary
+    val background = MaterialTheme.colorScheme.background
+    val primaryText = MaterialTheme.colorScheme.onBackground
+    val secondaryText = MaterialTheme.colorScheme.onSurfaceVariant
     val transition = rememberInfiniteTransition(label = "loadingAnimation")
     val rippleProgress by transition.animateFloat(
         initialValue = 0f,
@@ -49,7 +53,7 @@ fun LoadingScreen() {
         label = "dotPulse"
     )
 
-    Box(Modifier.fillMaxSize().background(Color(0xFF0E0E10))) {
+    Box(Modifier.fillMaxSize().background(background)) {
         Column(
             modifier = Modifier.align(Alignment.Center).offset(y = (-32).dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -101,7 +105,7 @@ fun LoadingScreen() {
             Spacer(Modifier.height(12.dp))
             Text(
                 text = "EzTunez",
-                color = Color(0xFFF4F1F5),
+                color = primaryText,
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-1).sp
@@ -109,7 +113,7 @@ fun LoadingScreen() {
             Spacer(Modifier.height(8.dp))
             Text(
                 text = "Perfect pitch, every time",
-                color = Color(0xFF969199),
+                color = secondaryText,
                 fontSize = 16.sp
             )
         }

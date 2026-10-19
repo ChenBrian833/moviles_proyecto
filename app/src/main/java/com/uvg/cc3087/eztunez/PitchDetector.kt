@@ -104,7 +104,13 @@ class GuitarPitchDetector(
         var filled = 0
         var recoveries = 0
         while (isRunning) {
-            val count = record.read(shorts, filled, shorts.size - filled)
+            val count = try {
+                record.read(shorts, filled, shorts.size - filled)
+            } catch (_: IllegalStateException) {
+                break
+            } catch (_: SecurityException) {
+                break
+            }
             if (!isRunning) break
             if (count < 0) {
                 onPitchDetected(null)
