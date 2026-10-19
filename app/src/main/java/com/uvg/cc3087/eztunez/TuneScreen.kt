@@ -344,7 +344,8 @@ fun TuneScreen(
 
             Text(
                 text = if (detectedPitch != null) {
-                    "${selectedString.note} offset: %.1f cents".format(centsOffset)
+                    "${formatNote(selectedString.note, settings.notationSystem)} offset: %.1f cents"
+                        .format(centsOffset)
                 } else {
                     microphoneState.message()
                 },
