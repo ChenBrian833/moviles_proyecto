@@ -114,7 +114,6 @@ class GuitarPitchDetector(
                 val replacementResult = openRecorder()
                 val replacement = replacementResult.record
                 if (replacement == null) {
-                    onStateChanged(MicrophoneState.CAPTURE_INTERRUPTED)
                     break
                 }
                 // stop() can run while the replacement is being opened.

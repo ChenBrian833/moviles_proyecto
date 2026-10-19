@@ -38,6 +38,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 private val TuneBackground: Color @Composable get() = MaterialTheme.colorScheme.background
 private val TuneHeader: Color @Composable get() = MaterialTheme.colorScheme.surface
@@ -76,6 +79,7 @@ fun TuneScreen(
     }
     var retryToken by remember { mutableIntStateOf(0) }
     val activity = context.findActivity()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -96,6 +100,26 @@ fun TuneScreen(
                 MicrophoneState.PERMISSION_DENIED
             }
         }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val granted = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.RECORD_AUDIO
+                ) == PackageManager.PERMISSION_GRANTED
+                if (granted && !hasMicrophonePermission) {
+                    hasMicrophonePermission = true
+                    microphoneState = MicrophoneState.PERMISSION_GRANTED
+                } else if (!granted && hasMicrophonePermission) {
+                    hasMicrophonePermission = false
+                    microphoneState = MicrophoneState.PERMISSION_DENIED
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LaunchedEffect(Unit) {
 
