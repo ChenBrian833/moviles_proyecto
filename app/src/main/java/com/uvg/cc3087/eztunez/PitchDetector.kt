@@ -12,7 +12,10 @@ import kotlin.concurrent.thread
 
 class GuitarPitchDetector(
     private val context: Context,
-    private val onPitchDetected: (DetectedPitch?) -> Unit
+    private val rmsThreshold: Float = DEFAULT_RMS_THRESHOLD,
+    private val referencePitch: Int = DEFAULT_REFERENCE_PITCH,
+    private val onPitchDetected: (DetectedPitch?) -> Unit,
+    private val onStateChanged: (MicrophoneState) -> Unit = {}
 ) {
     @Volatile private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
@@ -22,24 +25,39 @@ class GuitarPitchDetector(
         if (isRunning || ContextCompat.checkSelfPermission(
                 context, Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
-        ) return
+        ) {
+            onStateChanged(MicrophoneState.PERMISSION_DENIED)
+            return
+        }
 
-        val record = openRecorder() ?: return
+        val openResult = openRecorder()
+        val record = openResult.record
+        if (record == null) {
+            onStateChanged(openResult.failure ?: MicrophoneState.INITIALIZATION_FAILED)
+            return
+        }
         audioRecord = record
         isRunning = true
+        onStateChanged(MicrophoneState.LISTENING)
         recordingThread = thread(start = true, name = "EzTunez-Microphone") {
             readMicrophone(record)
         }
     }
 
-    private fun openRecorder(): AudioRecord? {
+    private data class OpenResult(
+        val record: AudioRecord? = null,
+        val failure: MicrophoneState? = null
+    )
+
+    private fun openRecorder(): OpenResult {
         val minimum = AudioRecord.getMinBufferSize(
             GuitarSignalAnalyzer.SAMPLE_RATE,
             AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT
         )
-        if (minimum <= 0) return null
-        val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (minimum <= 0) return OpenResult(failure = MicrophoneState.MICROPHONE_UNAVAILABLE)
+        val manager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            ?: return OpenResult(failure = MicrophoneState.MICROPHONE_UNAVAILABLE)
         val supportsRaw = manager.getProperty(
             AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED
         ) == "true"
@@ -61,25 +79,27 @@ class GuitarPitchDetector(
                 )
                 if (record.state == AudioRecord.STATE_INITIALIZED) {
                     record.startRecording()
-                    if (record.recordingState == AudioRecord.RECORDSTATE_RECORDING) return record
+                    if (record.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                        return OpenResult(record = record)
+                    }
                 }
             } catch (_: IllegalArgumentException) {
                 // Try the next source if this device does not support the preferred one.
             } catch (_: IllegalStateException) {
             } catch (_: SecurityException) {
                 record?.release()
-                return null
+                return OpenResult(failure = MicrophoneState.PERMISSION_DENIED)
             }
             record?.release()
         }
-        return null
+        return OpenResult(failure = MicrophoneState.INITIALIZATION_FAILED)
     }
 
     private fun readMicrophone(initialRecord: AudioRecord) {
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
         val shorts = ShortArray(GuitarSignalAnalyzer.HOP_SIZE)
         val samples = FloatArray(GuitarSignalAnalyzer.HOP_SIZE)
-        var analyzer = GuitarSignalAnalyzer()
+        var analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch)
         var record = initialRecord
         var filled = 0
         var recoveries = 0
@@ -91,7 +111,12 @@ class GuitarPitchDetector(
                 // A dead AudioRecord otherwise loops forever without hearing anything.
                 if (count != AudioRecord.ERROR_DEAD_OBJECT || recoveries >= 2) break
                 record.release()
-                val replacement = openRecorder() ?: break
+                val replacementResult = openRecorder()
+                val replacement = replacementResult.record
+                if (replacement == null) {
+                    onStateChanged(MicrophoneState.CAPTURE_INTERRUPTED)
+                    break
+                }
                 // stop() can run while the replacement is being opened.
                 audioRecord = replacement
                 if (!isRunning) {
@@ -100,7 +125,7 @@ class GuitarPitchDetector(
                     return
                 }
                 record = replacement
-                analyzer = GuitarSignalAnalyzer()
+                analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch)
                 filled = 0
                 recoveries++
                 continue
@@ -116,6 +141,7 @@ class GuitarPitchDetector(
         if (isRunning) {
             isRunning = false
             onPitchDetected(null)
+            onStateChanged(MicrophoneState.CAPTURE_INTERRUPTED)
         }
     }
 

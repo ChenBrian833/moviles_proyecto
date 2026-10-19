@@ -25,25 +25,34 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
-private val TuneBackground = Color(0xFF0D0D0F)
-private val TuneHeader = Color(0xFF1B191E)
-private val TuneCard = Color(0xFF242328)
-private val TuneControl = Color(0xFF302E36)
-private val TuneTeal = Color(0xFF50D0C8)
-private val TuneText = Color(0xFFF4F1F5)
-private val TuneSecondaryText = Color(0xFF99959E)
-private val TuneMeterInactive = Color(0xFF464149)
+private val TuneBackground: Color @Composable get() = MaterialTheme.colorScheme.background
+private val TuneHeader: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val TuneCard: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val TuneControl: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val TuneTeal: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val TuneText: Color @Composable get() = MaterialTheme.colorScheme.onBackground
+private val TuneSecondaryText: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val TuneMeterInactive: Color @Composable get() = MaterialTheme.colorScheme.outlineVariant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TuneScreen(
     mode: TuningMode = TuningMode.AUTO,
+    settings: TunerSettings = TunerSettings(),
     onNavigate: (AppScreen) -> Unit
 ) {
 
@@ -58,6 +67,15 @@ fun TuneScreen(
             ) == PackageManager.PERMISSION_GRANTED
         )
     }
+    var permissionRequested by rememberSaveable { mutableStateOf(false) }
+    var microphoneState by remember {
+        mutableStateOf(
+            if (hasMicrophonePermission) MicrophoneState.PERMISSION_GRANTED
+            else MicrophoneState.PERMISSION_PENDING
+        )
+    }
+    var retryToken by remember { mutableIntStateOf(0) }
+    val activity = context.findActivity()
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -66,20 +84,35 @@ fun TuneScreen(
         ) { granted ->
 
             hasMicrophonePermission = granted
+            microphoneState = if (granted) {
+                MicrophoneState.PERMISSION_GRANTED
+            } else if (activity != null && !ActivityCompat.shouldShowRequestPermissionRationale(
+                    activity,
+                    Manifest.permission.RECORD_AUDIO
+                ) && permissionRequested
+            ) {
+                MicrophoneState.PERMISSION_PERMANENTLY_DENIED
+            } else {
+                MicrophoneState.PERMISSION_DENIED
+            }
         }
 
     LaunchedEffect(Unit) {
 
         if (!hasMicrophonePermission) {
-
+            permissionRequested = true
             permissionLauncher.launch(
                 Manifest.permission.RECORD_AUDIO
             )
         }
     }
 
-    val guitarStrings = standardGuitarStrings
-    val tracker = remember(mode) { TuningTracker(mode) }
+    val guitarStrings = remember(settings.referencePitch) {
+        guitarStringsForReference(settings.referencePitch)
+    }
+    val tracker = remember(mode, settings.referencePitch) {
+        TuningTracker(mode, settings.referencePitch)
+    }
     var tuningState by remember(tracker) { mutableStateOf(tracker.state) }
     val selectedString = tuningState.selectedString
     val selectedStringId = selectedString.id
@@ -88,16 +121,33 @@ fun TuneScreen(
     val isInTune = tuningState.isInTune
     val detectionConfidence = detectedPitch?.probability?.coerceIn(0f, 1f) ?: 0f
 
-    DisposableEffect(context, hasMicrophonePermission, tracker) {
+    DisposableEffect(
+        context,
+        hasMicrophonePermission,
+        tracker,
+        settings.micSensitivity,
+        retryToken
+    ) {
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         var active = true
-        val detector = GuitarPitchDetector(context) { pitch ->
-            handler.post {
-                if (active) {
-                    tuningState = tracker.update(pitch, android.os.SystemClock.elapsedRealtime())
+        val detector = GuitarPitchDetector(
+            context = context,
+            rmsThreshold = sensitivityToRmsThreshold(settings.micSensitivity),
+            referencePitch = settings.referencePitch,
+            onPitchDetected = { pitch ->
+                handler.post {
+                    if (active) {
+                        tuningState = tracker.update(
+                            pitch,
+                            android.os.SystemClock.elapsedRealtime()
+                        )
+                    }
                 }
+            },
+            onStateChanged = { state ->
+                handler.post { if (active) microphoneState = state }
             }
-        }
+        )
         if (hasMicrophonePermission) detector.start()
         onDispose {
             active = false
@@ -158,12 +208,37 @@ fun TuneScreen(
                 modifier = Modifier.height(28.dp)
             )
 
+            if (microphoneState != MicrophoneState.LISTENING) {
+                MicrophoneStatusCard(
+                    state = microphoneState,
+                    onRetry = {
+                        if (!hasMicrophonePermission) {
+                            permissionRequested = true
+                            microphoneState = MicrophoneState.PERMISSION_PENDING
+                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        } else {
+                            microphoneState = MicrophoneState.PERMISSION_GRANTED
+                            retryToken++
+                        }
+                    },
+                    onOpenSettings = {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:${context.packageName}")
+                            )
+                        )
+                    }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             /*
              * DETECTED NOTE
              */
 
             Text(
-                text = selectedString.note,
+                text = formatNote(selectedString.note, settings.notationSystem),
                 fontSize = 64.sp,
                 fontWeight = FontWeight.Bold,
                 color = TuneText
@@ -174,9 +249,11 @@ fun TuneScreen(
             )
 
             Text(
-                text = detectedPitch?.let {
-                    "${it.note} · %.1f Hz".format(it.frequency)
-                } ?: "-- Hz",
+                text = formatPitchDisplay(
+                    detectedPitch,
+                    settings.showRealTimeHz,
+                    settings.notationSystem
+                ),
 
                 style = MaterialTheme.typography.titleLarge,
                 color = TuneSecondaryText
@@ -245,7 +322,7 @@ fun TuneScreen(
                 text = if (detectedPitch != null) {
                     "${selectedString.note} offset: %.1f cents".format(centsOffset)
                 } else {
-                    "Listening..."
+                    microphoneState.message()
                 },
 
                 style = MaterialTheme.typography.bodyLarge,
@@ -283,7 +360,7 @@ fun TuneScreen(
                         guitarStrings.forEach { guitarString ->
 
                             GuitarStringButton(
-                                note = guitarString.note,
+                                note = formatNote(guitarString.note, settings.notationSystem),
                                 selected =
                                     guitarString.id == selectedStringId,
                                 enabled = mode == TuningMode.MANUAL,
@@ -331,6 +408,34 @@ fun TuneScreen(
 
         }
     }
+}
+
+@Composable
+private fun MicrophoneStatusCard(
+    state: MicrophoneState,
+    onRetry: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = TuneCard),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(state.message(), color = TuneText)
+            if (state.canRetry || state == MicrophoneState.PERMISSION_PENDING) {
+                TextButton(onClick = onRetry) { Text("Retry") }
+            }
+            if (state == MicrophoneState.PERMISSION_PERMANENTLY_DENIED) {
+                TextButton(onClick = onOpenSettings) { Text("Open app settings") }
+            }
+        }
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 @Composable
@@ -383,6 +488,9 @@ private fun TuningMeter(
     hasSignal: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val meterInactive = TuneMeterInactive
+    val teal = TuneTeal
+    val secondaryText = TuneSecondaryText
     // A damped spring interpolates audio frames without overshoot or abrupt jumps.
     val needleOffset by animateFloatAsState(
         targetValue = centsOffset.coerceIn(-50f, 50f),
@@ -403,7 +511,7 @@ private fun TuningMeter(
          * Main semicircle.
          */
         drawArc(
-            color = TuneMeterInactive,
+            color = meterInactive,
             startAngle = 180f,
             sweepAngle = 180f,
             useCenter = false,
@@ -462,9 +570,9 @@ private fun TuningMeter(
 
             drawLine(
                 color = if (i == 5) {
-                    TuneTeal
+                    teal
                 } else {
-                    TuneSecondaryText
+                    secondaryText
                 },
 
                 start = Offset(
@@ -525,7 +633,7 @@ private fun TuningMeter(
                     needleLength
 
         drawLine(
-            color = if (hasSignal) TuneTeal else TuneMeterInactive,
+            color = if (hasSignal) teal else meterInactive,
 
             start = Offset(
                 centerX,
@@ -546,7 +654,7 @@ private fun TuningMeter(
          * Center pivot.
          */
         drawCircle(
-            color = if (hasSignal) TuneTeal else TuneMeterInactive,
+            color = if (hasSignal) teal else meterInactive,
             radius = 12f,
             center = Offset(
                 centerX,
