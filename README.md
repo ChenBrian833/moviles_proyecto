@@ -27,9 +27,11 @@ presentaciones.
 
 | | |
 |---|---|
-| Sistema operativo | Android (minSdk 28) |
+| Sistema operativo | Android (minSdk 28, compileSdk 36) |
 | Lenguaje | Kotlin |
 | UI | Jetpack Compose |
+| Detección | AudioRecord + TarsosDSP YIN |
+| Preferencias | Preferences DataStore |
 
 ## Cómo correr el proyecto
 
@@ -38,12 +40,38 @@ presentaciones.
 3. Conectar un dispositivo físico o levantar un emulador (API 28 o superior).
 4. Correr la app ( Run 'app').
 
+Desde terminal, con `JAVA_HOME` apuntando al JBR/JDK compatible:
+
+```bash
+./gradlew testDebugUnitTest
+./gradlew assembleDebug
+```
+
 ## Estado actual del proyecto
 
-- [x] App base que compila y muestra un primer Composable
-- [ ] Detección de frecuencia por micrófono
-- [ ] Comparación contra afinación seleccionada
-- [ ] Indicador visual de afinado / grave / agudo
+- [x] Captura real del micrófono con `AudioRecord`
+- [x] Detección de pitch con TarsosDSP/YIN
+- [x] Auto Tune y Manual Tune para E2, A2, D3, G3, B3 y E4
+- [x] Aguja, cents y mensajes Tune Up / Tune Down / In Tune
+- [x] Ajustes persistentes de sensibilidad, A4, Hz, notación y tema
+- [x] Estados básicos de permiso, inicialización e interrupción del micrófono
+- [ ] Presets conectados al motor (fase posterior)
+- [ ] FFT avanzada (no disponible; la interfaz la muestra deshabilitada)
+
+## Verificación manual de la fase Manual Tune + Settings
+
+En un teléfono físico con una fuente de sonido adecuada:
+
+1. Conceder el permiso de micrófono y comprobar Auto Tune en las seis cuerdas.
+2. Abrir Manual Tune, seleccionar cada objetivo y verificar que no cambie automáticamente.
+3. Cambiar de cuerda y confirmar que se borren la lectura y la aguja anteriores.
+4. Probar notas bajas/altas y confirmar Tune Up, Tune Down e In Tune.
+5. Cambiar sensibilidad y A4; volver al afinador y comprobar su efecto.
+6. Ocultar Hz, cambiar entre Standard/Solfège y alternar el tema.
+7. Cerrar por completo y reabrir la app para confirmar la persistencia.
+8. Denegar el permiso, reintentar y probar el acceso a ajustes cuando quede bloqueado.
+
+La compilación automatizada no sustituye esta verificación acústica en hardware real.
 
 ## Equipo
 

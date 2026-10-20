@@ -5,13 +5,15 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 /** Tarsos YIN on consecutive microphone samples, without a mandatory audio filter. */
-internal class GuitarSignalAnalyzer {
+internal class GuitarSignalAnalyzer(
+    private val rmsThreshold: Float = DEFAULT_RMS_THRESHOLD,
+    private val referencePitch: Int = DEFAULT_REFERENCE_PITCH
+) {
     companion object {
         const val SAMPLE_RATE = 44100
         const val WINDOW_SIZE = 4096
         const val HOP_SIZE = WINDOW_SIZE / 2
         const val MIN_PROBABILITY = 0.75f
-        private const val MIN_RMS = 0.00025
     }
 
     private val window = FloatArray(WINDOW_SIZE)
@@ -37,7 +39,7 @@ internal class GuitarSignalAnalyzer {
             val centered = sample - mean
             energy += centered * centered
         }
-        if (sqrt(energy / WINDOW_SIZE) < MIN_RMS) return null
+        if (sqrt(energy / WINDOW_SIZE) < rmsThreshold.coerceAtLeast(0f)) return null
 
         val primary = detect(standardYin)
         if (primary != null) {
@@ -63,9 +65,11 @@ internal class GuitarSignalAnalyzer {
         if (!result.isPitched || !frequency.isFinite() || frequency !in 60f..400f ||
             !result.probability.isFinite() || result.probability < MIN_PROBABILITY
         ) return null
-        return convertFrequency(frequency, result.probability)
+        return convertFrequency(frequency, result.probability, referencePitch)
     }
 
     private fun distanceToOpenString(frequency: Float): Float =
-        standardGuitarStrings.minOf { abs(centsFrom(frequency, it.frequency)) }
+        guitarStringsForReference(referencePitch).minOf {
+            abs(centsFrom(frequency, it.frequency))
+        }
 }

@@ -15,14 +15,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
-private val HomeBackground = Color(0xFF0D0D0F)
-private val HomeHeader = Color(0xFF1B191E)
-private val HomeCard = Color(0xFF242328)
-private val HomeIconBox = Color(0xFF2C2A32)
-private val HomeTeal = Color(0xFF50D0C8)
-private val HomeSelected = Color(0xFF006B63)
-private val HomeText = Color(0xFFF4F1F5)
-private val HomeSecondary = Color(0xFF99959E)
+private val HomeBackground: Color @Composable get() = MaterialTheme.colorScheme.background
+private val HomeHeader: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val HomeCard: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val HomeIconBox: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val HomeTeal: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val HomeSelected: Color @Composable get() = MaterialTheme.colorScheme.primaryContainer
+private val HomeText: Color @Composable get() = MaterialTheme.colorScheme.onBackground
+private val HomeSecondary: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
