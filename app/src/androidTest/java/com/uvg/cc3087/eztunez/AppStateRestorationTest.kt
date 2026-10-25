@@ -42,7 +42,7 @@ class AppStateRestorationTest {
             tuner = ViewModelProvider(
                 store,
                 TunerViewModel.Factory(
-                    PitchCaptureFactory { _, _, _, onState ->
+                    PitchCaptureFactory { _, _, _, _, onState ->
                         FakeCapture(onState).also(captures::add)
                     },
                     SystemClock::elapsedRealtime
@@ -70,8 +70,8 @@ class AppStateRestorationTest {
     @Test fun presetDestinationFilterAndSelectionSurviveRestoration() {
         val restoration = launchApp()
         compose.onNodeWithText("Presets").performClick()
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Drop D — DADGBE"))
-        compose.onNodeWithText("Drop D — DADGBE").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Drop D — D A D G B E"))
+        compose.onNodeWithText("Drop D — D A D G B E").performClick()
         compose.onNodeWithText("Guitar").performClick()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Tuning Presets").assertIsDisplayed()
@@ -79,6 +79,11 @@ class AppStateRestorationTest {
             assertEquals(PresetFilter.GUITAR, presets.uiState.value.selectedFilter)
             assertEquals(2, presets.uiState.value.selectedPresetId)
         }
+        compose.onNodeWithText("Home").performClick()
+        compose.onNodeWithText("Drop D (D A D G B E)").assertIsDisplayed()
+        compose.onNodeWithText("Tune").performClick()
+        compose.onNodeWithText("Drop D · Auto Tune").assertIsDisplayed()
+        compose.runOnIdle { assertEquals("D2", tuner.uiState.value.tuning.selectedString.note) }
     }
 
     @Test fun manualModeAndTargetSurviveRestorationWithOneReplacementCapture() {

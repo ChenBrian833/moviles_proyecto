@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +28,8 @@ private val HomeSecondary: Color @Composable get() = MaterialTheme.colorScheme.o
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    preset: TuningPreset = BuiltInTuningPresets.standard,
+    notationSystem: NotationSystem = NotationSystem.STANDARD,
     onNavigate: (AppScreen) -> Unit,
     onStartTuning: (TuningMode) -> Unit
 ) {
@@ -148,7 +151,16 @@ fun HomeScreen(
                             )
 
                             Text(
-                                text = "Standard Tuning (E A D G B E)",
+                                text = stringResource(
+                                    R.string.current_tuning,
+                                    preset.name,
+                                    preset.midiNotes.joinToString(" ") {
+                                        formatNote(
+                                            noteNameForMidi(it, preset.preferFlats, includeOctave = false),
+                                            notationSystem
+                                        )
+                                    }
+                                ),
                                 color = HomeSecondary,
                                 fontSize = 12.sp
                             )

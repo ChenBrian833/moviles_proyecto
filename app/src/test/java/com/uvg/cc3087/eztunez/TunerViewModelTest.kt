@@ -27,8 +27,8 @@ class TunerViewModelTest {
         viewModel = ViewModelProvider(
             store,
             TunerViewModel.Factory(
-                PitchCaptureFactory { threshold, reference, onPitch, onState ->
-                    FakeCapture(threshold, reference, onPitch, onState).also(captures::add)
+                PitchCaptureFactory { threshold, reference, preset, onPitch, onState ->
+                    FakeCapture(threshold, reference, onPitch, onState, preset).also(captures::add)
                 },
                 nowMs = { now }
             )
@@ -110,6 +110,27 @@ class TunerViewModelTest {
         assertEquals(2, viewModel.uiState.value.tuning.selectedString.id)
     }
 
+    @Test fun changingPresetClearsOldReadingAndConfiguresBothTrackerAndCapture() {
+        start(TuningMode.MANUAL)
+        play(82.40689f)
+        assertTrue(viewModel.uiState.value.tuning.isInTune)
+        val previous = captures.single()
+        val dropD = BuiltInTuningPresets.all.single { it.id == 2 }
+
+        viewModel.configure(TuningMode.MANUAL, 440, dropD)
+        viewModel.startListening(DEFAULT_MIC_SENSITIVITY)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(1, previous.stops)
+        assertEquals(dropD, captures.last().preset)
+        assertEquals("D2", viewModel.uiState.value.tuning.selectedString.note)
+        assertNull(viewModel.uiState.value.tuning.pitch)
+        play(73.41619f)
+        assertTrue(viewModel.uiState.value.tuning.isInTune)
+        play(82.40689f)
+        assertFalse(viewModel.uiState.value.tuning.isInTune)
+        assertEquals(200f, viewModel.uiState.value.tuning.cents, 0.05f)
+    }
+
     @Test fun retryIgnoresBothQueuedAndLateCallbacksFromOldCapture() {
         start(TuningMode.MANUAL)
         viewModel.selectString(2)
@@ -124,7 +145,9 @@ class TunerViewModelTest {
         dispatcher.scheduler.runCurrent()
 
         assertEquals(1, previous.stops)
-        assertEquals(before, viewModel.uiState.value.tuning)
+        assertEquals(before.selectedString, viewModel.uiState.value.tuning.selectedString)
+        assertNull(viewModel.uiState.value.tuning.pitch)
+        assertFalse(viewModel.uiState.value.tuning.isInTune)
         assertEquals(MicrophoneState.LISTENING, viewModel.uiState.value.microphone)
     }
 
@@ -157,7 +180,8 @@ class TunerViewModelTest {
         previousCapture.onState(MicrophoneState.CAPTURE_INTERRUPTED)
         dispatcher.scheduler.runCurrent()
 
-        assertEquals(before, viewModel.uiState.value.tuning)
+        assertEquals(before.selectedString, viewModel.uiState.value.tuning.selectedString)
+        assertNull(viewModel.uiState.value.tuning.pitch)
         assertEquals(1, previousCapture.stops)
         assertEquals(2, captures.size)
         assertEquals(1, captures.last().starts)
@@ -201,6 +225,47 @@ class TunerViewModelTest {
         dispatcher.scheduler.runCurrent()
         assertEquals(MicrophoneState.MICROPHONE_UNAVAILABLE, viewModel.uiState.value.microphone)
         assertTrue(viewModel.uiState.value.microphone.canRetry)
+    }
+
+    @Test fun microphoneFailuresClearInTuneImmediatelyAndRejectLateReadings() {
+        val failures = listOf(
+            MicrophoneState.CAPTURE_INTERRUPTED,
+            MicrophoneState.MICROPHONE_UNAVAILABLE,
+            MicrophoneState.INITIALIZATION_FAILED,
+            MicrophoneState.PERMISSION_DENIED,
+            MicrophoneState.PERMISSION_PERMANENTLY_DENIED
+        )
+        for (failure in failures) {
+            viewModel.endSession()
+            start(TuningMode.MANUAL)
+            viewModel.selectString(6)
+            play(329.62756f)
+            assertTrue(viewModel.uiState.value.tuning.isInTune)
+            val previous = captures.last()
+            val lastPitch = viewModel.uiState.value.tuning.pitch
+
+            // No time passes: a single null reading would normally hold In Tune for 550ms.
+            previous.onPitch(null)
+            previous.onState(failure)
+            previous.onPitch(lastPitch) // A queued reading must not restore the stale result.
+            dispatcher.scheduler.runCurrent()
+
+            assertEquals(failure, viewModel.uiState.value.microphone)
+            assertEquals(6, viewModel.uiState.value.tuning.selectedString.id)
+            assertNull(viewModel.uiState.value.tuning.pitch)
+            assertEquals(0f, viewModel.uiState.value.tuning.cents, 0f)
+            assertFalse(viewModel.uiState.value.tuning.isInTune)
+            assertEquals(1, previous.stops)
+
+            viewModel.startListening(DEFAULT_MIC_SENSITIVITY)
+            dispatcher.scheduler.runCurrent()
+            assertFalse(viewModel.uiState.value.tuning.isInTune)
+            captures.last().onPitch(lastPitch)
+            dispatcher.scheduler.runCurrent()
+            assertNull(viewModel.uiState.value.tuning.pitch) // Old smoothing history was cleared.
+            play(329.62756f)
+            assertTrue(viewModel.uiState.value.tuning.isInTune)
+        }
     }
 
     @Test fun quietPcmNotesProduceTheSameStatesAsThePreRefactorTrackerPath() {
@@ -275,7 +340,8 @@ class TunerViewModelTest {
         val threshold: Float,
         val reference: Int,
         val onPitch: (DetectedPitch?) -> Unit,
-        val onState: (MicrophoneState) -> Unit
+        val onState: (MicrophoneState) -> Unit,
+        val preset: TuningPreset
     ) : PitchCapture {
         var starts = 0
         var stops = 0

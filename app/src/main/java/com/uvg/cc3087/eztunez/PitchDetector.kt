@@ -15,7 +15,8 @@ class GuitarPitchDetector(
     private val rmsThreshold: Float = DEFAULT_RMS_THRESHOLD,
     private val referencePitch: Int = DEFAULT_REFERENCE_PITCH,
     private val onPitchDetected: (DetectedPitch?) -> Unit,
-    private val onStateChanged: (MicrophoneState) -> Unit = {}
+    private val onStateChanged: (MicrophoneState) -> Unit = {},
+    private val preset: TuningPreset = BuiltInTuningPresets.standard
 ) : PitchCapture {
     @Volatile private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
@@ -99,7 +100,7 @@ class GuitarPitchDetector(
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
         val shorts = ShortArray(GuitarSignalAnalyzer.HOP_SIZE)
         val samples = FloatArray(GuitarSignalAnalyzer.HOP_SIZE)
-        var analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch)
+        var analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch, preset)
         var record = initialRecord
         var filled = 0
         var recoveries = 0
@@ -130,7 +131,7 @@ class GuitarPitchDetector(
                     return
                 }
                 record = replacement
-                analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch)
+                analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch, preset)
                 filled = 0
                 recoveries++
                 continue

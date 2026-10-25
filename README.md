@@ -55,7 +55,7 @@ Desde terminal, con `JAVA_HOME` apuntando al JBR/JDK compatible:
 - [x] Aguja, cents y mensajes Tune Up / Tune Down / In Tune
 - [x] Ajustes persistentes de sensibilidad, A4, Hz, notación y tema
 - [x] Estados básicos de permiso, inicialización e interrupción del micrófono
-- [ ] Presets conectados al motor (fase posterior)
+- [x] Presets Standard, Drop D, Open G, DADGAD y Half Step Down conectados al motor
 - [ ] FFT avanzada (no disponible; la interfaz la muestra deshabilitada)
 
 ## Verificación manual de la fase Manual Tune + Settings
@@ -83,15 +83,19 @@ La compilación automatizada no sustituye esta verificación acústica en hardwa
   `StateFlow`. `GuitarPitchDetector` implementa la captura; YIN y sus umbrales no
   cambian. Los callbacks de capturas anteriores se descartan al detener o reintentar.
 - `TuningPresetsRoute` conecta la pantalla con `TuningPresetsViewModel`; el catálogo
-  local vive en `TuningPresetRepository`. La selección todavía no configura el motor.
+  local vive en `TuningPresetRepository`. Cada preset define seis notas MIDI con
+  octavas. La selección compartida configura Home, Tune, el tracker y las referencias
+  del analizador. Los objetivos se recalculan según el A4 elegido en Settings.
 - `SettingsRoute` conecta `SettingsScreen` con el ViewModel y el repositorio
   DataStore existentes. Home conserva únicamente estado visual local.
 
 La pantalla actual y el modo de afinación usan `rememberSaveable`. Al rotar, los
 ViewModels conservan el objetivo manual y los filtros/selección de presets; el
 registro anterior del micrófono se detiene y la nueva pantalla inicia otra captura.
-Las sesiones se reinician solo al navegar a otra pantalla. No se guardan muestras
-de audio en el estado de Android.
+La sesión del afinador se reinicia al navegar a otra pantalla, conservando el preset
+activo. Salir de Presets reinicia solo su filtro. La selección dura durante la sesión
+de la aplicación y la rotación; una apertura nueva usa Standard. No se guardan
+muestras de audio en el estado de Android.
 
 El indicador de carga aparece únicamente mientras llega la primera lectura de
 DataStore, sin temporizador ni calibración de micrófono simulada. Los ajustes ya
@@ -99,6 +103,10 @@ cargados se conservan durante la recreación. La captura solo se inicia con perm
 y con el afinador en estado `RESUMED`. Al pausar, bloquear o dejar la aplicación se
 libera el micrófono; al volver se comprueba el permiso y se inicia una nueva captura
 con el mismo objetivo. Los reintentos usan la misma condición de ciclo de vida.
+Al detenerse la captura o recibir un error de micrófono se borran inmediatamente
+la medición, los cents y el historial de suavizado, conservando la cuerda elegida.
+Un callback tardío no puede restablecer una lectura de una captura detenida. Las
+pausas breves de señal durante una captura activa mantienen su tolerancia habitual.
 La restauración de selecciones de los ViewModels
 después de que Android termine el proceso también queda pendiente.
 

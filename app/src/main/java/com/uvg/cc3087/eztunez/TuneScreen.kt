@@ -17,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,7 @@ private val TuneMeterInactive: Color @Composable get() = MaterialTheme.colorSche
 fun TuneScreen(
     mode: TuningMode = TuningMode.AUTO,
     settings: TunerSettings = TunerSettings(),
+    preset: TuningPreset = BuiltInTuningPresets.standard,
     uiState: TunerUiState,
     onSelectString: (Int) -> Unit,
     onRetry: () -> Unit,
@@ -45,8 +47,8 @@ fun TuneScreen(
     onNavigate: (AppScreen) -> Unit
 ) {
 
-    val guitarStrings = remember(settings.referencePitch) {
-        guitarStringsForReference(settings.referencePitch)
+    val guitarStrings = remember(settings.referencePitch, preset) {
+        preset.guitarStrings(settings.referencePitch)
     }
     val tuningState = uiState.tuning
     val microphoneState = uiState.microphone
@@ -73,7 +75,11 @@ fun TuneScreen(
                         )
 
                         Text(
-                            text = "Standard · ${if (mode == TuningMode.AUTO) "Auto Tune" else "Manual Tune"}",
+                            text = stringResource(
+                                R.string.tuning_mode_subtitle,
+                                preset.name,
+                                if (mode == TuningMode.AUTO) "Auto Tune" else "Manual Tune"
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = TuneSecondaryText
                         )

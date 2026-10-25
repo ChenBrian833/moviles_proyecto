@@ -33,6 +33,7 @@ fun TunerRoute(
     viewModel: TunerViewModel,
     mode: TuningMode,
     settings: TunerSettings,
+    preset: TuningPreset = BuiltInTuningPresets.standard,
     onNavigate: (AppScreen) -> Unit
 ) {
     val context = LocalContext.current
@@ -107,11 +108,12 @@ fun TunerRoute(
         mode,
         settings.referencePitch,
         settings.micSensitivity,
+        preset,
         hasMicrophonePermission,
         isResumed,
         captureRequestToken
     ) {
-        viewModel.configure(mode, settings.referencePitch)
+        viewModel.configure(mode, settings.referencePitch, preset)
         if (hasMicrophonePermission && isResumed &&
             lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
         ) {
@@ -124,6 +126,7 @@ fun TunerRoute(
     TuneScreen(
         mode = mode,
         settings = settings,
+        preset = preset,
         uiState = uiState,
         onSelectString = viewModel::selectString,
         onRetry = {

@@ -20,8 +20,8 @@ class MainActivity : ComponentActivity() {
         // The retained ViewModel's factory captures only the application context.
         val appContext = applicationContext
         TunerViewModel.Factory(
-            captureFactory = PitchCaptureFactory { threshold, reference, onPitch, onState ->
-                GuitarPitchDetector(appContext, threshold, reference, onPitch, onState)
+            captureFactory = PitchCaptureFactory { threshold, reference, preset, onPitch, onState ->
+                GuitarPitchDetector(appContext, threshold, reference, onPitch, onState, preset)
             },
             nowMs = android.os.SystemClock::elapsedRealtime
         )
@@ -75,6 +75,8 @@ fun App(
     tunerViewModel: TunerViewModel,
     presetsViewModel: TuningPresetsViewModel
 ) {
+    val presetsState by presetsViewModel.uiState.collectAsStateWithLifecycle()
+    val selectedPreset = presetsState.selectedPreset
 
     var currentScreen by rememberSaveable {
         mutableStateOf(AppScreen.HOME)
@@ -104,6 +106,8 @@ fun App(
             onNavigate = navigateTo
         )
         AppScreen.HOME -> HomeScreen(
+            preset = selectedPreset,
+            notationSystem = settings.notationSystem,
             onNavigate = navigateTo,
             onStartTuning = { mode ->
                 tuningMode = mode
@@ -112,6 +116,7 @@ fun App(
         )
         AppScreen.TUNE -> TunerRoute(
             viewModel = tunerViewModel,
+            preset = selectedPreset,
             mode = tuningMode,
             settings = settings,
             onNavigate = navigateTo

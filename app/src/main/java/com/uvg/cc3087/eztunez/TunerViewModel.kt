@@ -26,18 +26,26 @@ class TunerViewModel(
     private var tracker: TuningTracker? = null
     private var mode = TuningMode.AUTO
     private var referencePitch = DEFAULT_REFERENCE_PITCH
+    private var preset = BuiltInTuningPresets.standard
     private var capture: PitchCapture? = null
     private var captureGeneration = 0L
 
-    fun configure(mode: TuningMode, referencePitch: Int) {
+    fun configure(
+        mode: TuningMode,
+        referencePitch: Int,
+        preset: TuningPreset = BuiltInTuningPresets.standard
+    ) {
         val normalizedReference = normalizeReferencePitch(referencePitch)
-        if (tracker != null && this.mode == mode && this.referencePitch == normalizedReference) {
+        if (tracker != null && this.mode == mode && this.referencePitch == normalizedReference &&
+            this.preset == preset
+        ) {
             return
         }
         stopListening()
         this.mode = mode
         this.referencePitch = normalizedReference
-        val newTracker = TuningTracker(mode, normalizedReference)
+        this.preset = preset
+        val newTracker = TuningTracker(mode, normalizedReference, preset)
         tracker = newTracker
         mutableUiState.value = mutableUiState.value.copy(tuning = newTracker.state)
     }
@@ -50,6 +58,7 @@ class TunerViewModel(
         capture = captureFactory.create(
             rmsThreshold = sensitivityToRmsThreshold(micSensitivity),
             referencePitch = referencePitch,
+            preset = preset,
             onPitchDetected = { pitch ->
                 viewModelScope.launch {
                     if (generation == captureGeneration) {
@@ -64,7 +73,9 @@ class TunerViewModel(
                     if (generation == captureGeneration) setMicrophoneState(state)
                 }
             }
-        ).also { it.start() }
+        )
+        // Own the capture before start(), which can report a failure synchronously.
+        capture?.start()
     }
 
     fun stopListening() {
@@ -72,6 +83,9 @@ class TunerViewModel(
         captureGeneration++
         val previousCapture = capture
         capture = null
+        tracker?.let {
+            mutableUiState.value = mutableUiState.value.copy(tuning = it.clearMeasurement())
+        }
         previousCapture?.stop()
     }
 
@@ -81,6 +95,14 @@ class TunerViewModel(
     }
 
     fun setMicrophoneState(state: MicrophoneState) {
+        when (state) {
+            MicrophoneState.PERMISSION_DENIED,
+            MicrophoneState.PERMISSION_PERMANENTLY_DENIED,
+            MicrophoneState.MICROPHONE_UNAVAILABLE,
+            MicrophoneState.INITIALIZATION_FAILED,
+            MicrophoneState.CAPTURE_INTERRUPTED -> stopListening()
+            else -> Unit
+        }
         mutableUiState.value = mutableUiState.value.copy(microphone = state)
     }
 

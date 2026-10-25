@@ -4,8 +4,8 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TuningPresetsViewModelTest {
-    private val guitar = TuningPreset(1, "Standard", "EADGBE", "Guitar", PresetCategory.GUITAR)
-    private val custom = TuningPreset(8, "My tuning", "DADGBE", "Custom", PresetCategory.CUSTOM)
+    private val guitar = BuiltInTuningPresets.standard
+    private val custom = TuningPreset(8, "My tuning", listOf(38, 45, 50, 55, 59, 64), "Custom", PresetCategory.CUSTOM)
 
     private fun viewModel() = TuningPresetsViewModel(object : TuningPresetRepository {
         override fun getPresets() = listOf(guitar, custom)
@@ -38,13 +38,13 @@ class TuningPresetsViewModelTest {
         assertEquals(custom.id, viewModel.uiState.value.selectedPresetId)
     }
 
-    @Test fun leavingPresetsPreservesTheExistingResetOnReturn() {
+    @Test fun leavingPresetsResetsTheFilterButKeepsTheActiveTuning() {
         val viewModel = viewModel()
         viewModel.selectPreset(custom.id)
         viewModel.selectFilter(PresetFilter.CUSTOM)
         viewModel.endSession()
         assertEquals(PresetFilter.ALL, viewModel.uiState.value.selectedFilter)
-        assertEquals(guitar.id, viewModel.uiState.value.selectedPresetId)
+        assertEquals(custom, viewModel.uiState.value.selectedPreset)
         assertEquals(listOf(guitar, custom), viewModel.uiState.value.presets)
     }
 
@@ -55,7 +55,7 @@ class TuningPresetsViewModelTest {
             it.id == viewModel.uiState.value.selectedPresetId
         }
         assertEquals("Standard", selected.name)
-        assertEquals("EADGBE", selected.tuning)
+        assertEquals("E A D G B E", selected.tuning)
         viewModel.selectFilter(PresetFilter.CUSTOM)
         assertTrue(viewModel.uiState.value.presets.isEmpty())
     }

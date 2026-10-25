@@ -12,13 +12,17 @@ enum class PresetFilter { ALL, GUITAR, CUSTOM }
 data class TuningPresetsUiState(
     val presets: List<TuningPreset>,
     val selectedFilter: PresetFilter = PresetFilter.ALL,
-    val selectedPresetId: Int = 1
-)
+    val selectedPreset: TuningPreset
+) {
+    val selectedPresetId: Int get() = selectedPreset.id
+}
 
 @MainThread
 class TuningPresetsViewModel(repository: TuningPresetRepository) : ViewModel() {
     private val allPresets = repository.getPresets().toList()
-    private val mutableUiState = MutableStateFlow(TuningPresetsUiState(allPresets))
+    private val mutableUiState = MutableStateFlow(
+        TuningPresetsUiState(allPresets, selectedPreset = allPresets.first())
+    )
     val uiState: StateFlow<TuningPresetsUiState> = mutableUiState.asStateFlow()
 
     fun selectFilter(filter: PresetFilter) {
@@ -31,14 +35,13 @@ class TuningPresetsViewModel(repository: TuningPresetRepository) : ViewModel() {
     }
 
     fun selectPreset(id: Int) {
-        if (allPresets.any { it.id == id }) {
-            mutableUiState.value = mutableUiState.value.copy(selectedPresetId = id)
-        }
+        val preset = allPresets.firstOrNull { it.id == id } ?: return
+        mutableUiState.value = mutableUiState.value.copy(selectedPreset = preset)
     }
 
     fun endSession() {
-        // Called by navigation when leaving Presets, not by configuration-change disposal.
-        mutableUiState.value = TuningPresetsUiState(allPresets)
+        // Reset only the picker filter. The active tuning continues on Home/Tune.
+        mutableUiState.value = mutableUiState.value.copy(presets = allPresets, selectedFilter = PresetFilter.ALL)
     }
 
     class Factory(private val repository: TuningPresetRepository) : ViewModelProvider.Factory {

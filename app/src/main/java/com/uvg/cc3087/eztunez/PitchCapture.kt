@@ -10,6 +10,7 @@ fun interface PitchCaptureFactory {
     fun create(
         rmsThreshold: Float,
         referencePitch: Int,
+        preset: TuningPreset,
         onPitchDetected: (DetectedPitch?) -> Unit,
         onStateChanged: (MicrophoneState) -> Unit
     ): PitchCapture
