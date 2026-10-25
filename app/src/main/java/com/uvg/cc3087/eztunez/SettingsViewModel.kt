@@ -11,10 +11,12 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val repository: SettingsRepository
 ) : ViewModel() {
-    val settings: StateFlow<TunerSettings> = repository.settings.stateIn(
+    // Null means the first disk read is still pending, rather than temporary default settings.
+    // stateIn retains its last value while the Activity's collector is recreated.
+    val settings: StateFlow<TunerSettings?> = repository.settings.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = TunerSettings()
+        initialValue = null
     )
 
     fun updateMicSensitivity(value: Float) = update {

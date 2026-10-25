@@ -27,15 +27,12 @@ private val Teal: Color @Composable get() = MaterialTheme.colorScheme.primary
 private val PrimaryText: Color @Composable get() = MaterialTheme.colorScheme.onBackground
 private val SecondaryText: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 
-enum class PresetFilter {
-    ALL,
-    GUITAR,
-    CUSTOM
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TuningPresetsScreen(
+    uiState: TuningPresetsUiState,
+    onSelectFilter: (PresetFilter) -> Unit,
+    onSelectPreset: (Int) -> Unit,
     onNavigate: (AppScreen) -> Unit
 ) {
     val snackbarHostState = remember {
@@ -43,84 +40,6 @@ fun TuningPresetsScreen(
     }
 
     val scope = rememberCoroutineScope()
-
-    var selectedFilter by remember {
-        mutableStateOf(PresetFilter.ALL)
-    }
-
-    // Standard tuning starts selected.
-    // When another preset is clicked, this ID changes.
-    var selectedPresetId by remember {
-        mutableIntStateOf(1)
-    }
-
-    val presets = remember {
-        listOf(
-            TuningPreset(
-                id = 1,
-                name = "Standard",
-                tuning = "EADGBE",
-                description = "Common layout suitable for most acoustic & electric guitars",
-                category = PresetCategory.GUITAR
-            ),
-            TuningPreset(
-                id = 2,
-                name = "Drop D",
-                tuning = "DADGBE",
-                description = "Heavy low response, lower the 6th string a whole step",
-                category = PresetCategory.GUITAR
-            ),
-            TuningPreset(
-                id = 3,
-                name = "Open G",
-                tuning = "DGDGBD",
-                description = "Popular for slide blues playing & folk compositions",
-                category = PresetCategory.GUITAR
-            ),
-            TuningPreset(
-                id = 4,
-                name = "DADGAD Tuning",
-                tuning = "",
-                description = "Celtic folk tuning with rich natural resonance",
-                category = PresetCategory.GUITAR
-            ),
-            TuningPreset(
-                id = 5,
-                name = "Half Step Down",
-                tuning = "Eb Ab Db Gb Bb Eb",
-                description = "Standard relative pitches, lowered by one semitone",
-                category = PresetCategory.GUITAR
-            )
-        )
-    }
-
-    /*
-     * Filter the list BEFORE giving it to LazyColumn.
-     * This keeps calculations out of the item Composable.
-     */
-    val filteredPresets = remember(
-        selectedFilter,
-        presets
-    ) {
-        when (selectedFilter) {
-
-            PresetFilter.ALL -> {
-                presets
-            }
-
-            PresetFilter.GUITAR -> {
-                presets.filter {
-                    it.category == PresetCategory.GUITAR
-                }
-            }
-
-            PresetFilter.CUSTOM -> {
-                presets.filter {
-                    it.category == PresetCategory.CUSTOM
-                }
-            }
-        }
-    }
 
     Scaffold(
         containerColor = Background,
@@ -220,9 +139,9 @@ fun TuningPresetsScreen(
             )
 
             PresetFilterBar(
-                selectedFilter = selectedFilter,
+                selectedFilter = uiState.selectedFilter,
                 onFilterSelected = {
-                    selectedFilter = it
+                    onSelectFilter(it)
                 }
             )
 
@@ -240,7 +159,7 @@ fun TuningPresetsScreen(
             ) {
 
                 items(
-                    items = filteredPresets,
+                    items = uiState.presets,
 
 
                     key = { preset ->
@@ -252,11 +171,11 @@ fun TuningPresetsScreen(
                         preset = preset,
 
                         // The card checks whether its ID matches the currently selected ID.
-                        isSelected = preset.id == selectedPresetId,
+                        isSelected = preset.id == uiState.selectedPresetId,
 
                         onClick = {
 
-                            selectedPresetId = preset.id
+                            onSelectPreset(preset.id)
 
                             scope.launch {
                                 snackbarHostState.showSnackbar(

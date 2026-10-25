@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">eztunez</string>
+    <string name="loading_settings">Loading settings…</string>
 </resources>

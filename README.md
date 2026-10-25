@@ -73,6 +73,48 @@ En un teléfono físico con una fuente de sonido adecuada:
 
 La compilación automatizada no sustituye esta verificación acústica en hardware real.
 
+## Arquitectura
+
+- `MainActivity` crea los ViewModels con factories e inyección manual. La captura
+  utiliza el contexto de aplicación; el ViewModel no conserva una Activity.
+- `TunerRoute` conecta permisos, ajustes de Android y duración de la pantalla con
+  `TunerViewModel`. `TuneScreen` recibe estado de solo lectura y callbacks.
+- `TunerViewModel` coordina `TuningTracker` y la interfaz `PitchCapture` mediante
+  `StateFlow`. `GuitarPitchDetector` implementa la captura; YIN y sus umbrales no
+  cambian. Los callbacks de capturas anteriores se descartan al detener o reintentar.
+- `TuningPresetsRoute` conecta la pantalla con `TuningPresetsViewModel`; el catálogo
+  local vive en `TuningPresetRepository`. La selección todavía no configura el motor.
+- `SettingsRoute` conecta `SettingsScreen` con el ViewModel y el repositorio
+  DataStore existentes. Home conserva únicamente estado visual local.
+
+La pantalla actual y el modo de afinación usan `rememberSaveable`. Al rotar, los
+ViewModels conservan el objetivo manual y los filtros/selección de presets; el
+registro anterior del micrófono se detiene y la nueva pantalla inicia otra captura.
+Las sesiones se reinician solo al navegar a otra pantalla. No se guardan muestras
+de audio en el estado de Android.
+
+El indicador de carga aparece únicamente mientras llega la primera lectura de
+DataStore, sin temporizador ni calibración de micrófono simulada. Los ajustes ya
+cargados se conservan durante la recreación. El control de captura al pasar a
+segundo plano sigue pendiente. La restauración de selecciones de los ViewModels
+después de que Android termine el proceso también queda pendiente.
+
+Las pruebas de ViewModels usan una captura falsa y un reloj controlado para
+verificar selección manual/automática, cambios de sensibilidad y A4, reintentos,
+callbacks tardíos, liberación de recursos y filtros de presets. Ejecutar:
+
+```bash
+./gradlew testDebugUnitTest assembleDebug lintDebug
+```
+
+`AppStateRestorationTest` verifica el destino, modo manual, objetivo, presets y
+reemplazo de captura al recrear la composición con estado guardado. Usa un
+micrófono falso; requiere dispositivo o emulador para ejecutarse:
+
+```bash
+./gradlew connectedDebugAndroidTest
+```
+
 ## Equipo
 
 - Brian Bernabe Bolaños Arreaga — 24846

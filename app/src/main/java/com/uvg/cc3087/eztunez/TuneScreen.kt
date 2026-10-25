@@ -24,24 +24,6 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.cos
 import kotlin.math.sin
 
-import android.Manifest
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
-
 private val TuneBackground: Color @Composable get() = MaterialTheme.colorScheme.background
 private val TuneHeader: Color @Composable get() = MaterialTheme.colorScheme.surface
 private val TuneCard: Color @Composable get() = MaterialTheme.colorScheme.surface
@@ -56,130 +38,24 @@ private val TuneMeterInactive: Color @Composable get() = MaterialTheme.colorSche
 fun TuneScreen(
     mode: TuningMode = TuningMode.AUTO,
     settings: TunerSettings = TunerSettings(),
+    uiState: TunerUiState,
+    onSelectString: (Int) -> Unit,
+    onRetry: () -> Unit,
+    onOpenSettings: () -> Unit,
     onNavigate: (AppScreen) -> Unit
 ) {
-
-    val context = LocalContext.current
-
-    var hasMicrophonePermission by remember {
-
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-    var permissionRequested by rememberSaveable { mutableStateOf(false) }
-    var microphoneState by remember {
-        mutableStateOf(
-            if (hasMicrophonePermission) MicrophoneState.PERMISSION_GRANTED
-            else MicrophoneState.PERMISSION_PENDING
-        )
-    }
-    var retryToken by remember { mutableIntStateOf(0) }
-    val activity = context.findActivity()
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            contract =
-                ActivityResultContracts.RequestPermission()
-        ) { granted ->
-
-            hasMicrophonePermission = granted
-            microphoneState = if (granted) {
-                MicrophoneState.PERMISSION_GRANTED
-            } else if (activity != null && !ActivityCompat.shouldShowRequestPermissionRationale(
-                    activity,
-                    Manifest.permission.RECORD_AUDIO
-                ) && permissionRequested
-            ) {
-                MicrophoneState.PERMISSION_PERMANENTLY_DENIED
-            } else {
-                MicrophoneState.PERMISSION_DENIED
-            }
-        }
-
-    DisposableEffect(lifecycleOwner, context) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                val granted = ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.RECORD_AUDIO
-                ) == PackageManager.PERMISSION_GRANTED
-                if (granted && !hasMicrophonePermission) {
-                    hasMicrophonePermission = true
-                    microphoneState = MicrophoneState.PERMISSION_GRANTED
-                } else if (!granted && hasMicrophonePermission) {
-                    hasMicrophonePermission = false
-                    microphoneState = MicrophoneState.PERMISSION_DENIED
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    LaunchedEffect(Unit) {
-
-        if (!hasMicrophonePermission) {
-            permissionRequested = true
-            permissionLauncher.launch(
-                Manifest.permission.RECORD_AUDIO
-            )
-        }
-    }
 
     val guitarStrings = remember(settings.referencePitch) {
         guitarStringsForReference(settings.referencePitch)
     }
-    val tracker = remember(mode, settings.referencePitch) {
-        TuningTracker(mode, settings.referencePitch)
-    }
-    var tuningState by remember(tracker) { mutableStateOf(tracker.state) }
+    val tuningState = uiState.tuning
+    val microphoneState = uiState.microphone
     val selectedString = tuningState.selectedString
     val selectedStringId = selectedString.id
     val detectedPitch = tuningState.pitch
     val centsOffset = tuningState.cents
     val isInTune = tuningState.isInTune
     val detectionConfidence = detectedPitch?.probability?.coerceIn(0f, 1f) ?: 0f
-
-    DisposableEffect(
-        context,
-        hasMicrophonePermission,
-        tracker,
-        settings.micSensitivity,
-        retryToken
-    ) {
-        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        var active = true
-        val detector = GuitarPitchDetector(
-            context = context,
-            rmsThreshold = sensitivityToRmsThreshold(settings.micSensitivity),
-            referencePitch = settings.referencePitch,
-            onPitchDetected = { pitch ->
-                handler.post {
-                    if (active) {
-                        tuningState = tracker.update(
-                            pitch,
-                            android.os.SystemClock.elapsedRealtime()
-                        )
-                    }
-                }
-            },
-            onStateChanged = { state ->
-                handler.post { if (active) microphoneState = state }
-            }
-        )
-        if (hasMicrophonePermission) detector.start()
-        onDispose {
-            active = false
-            detector.stop()
-            handler.removeCallbacksAndMessages(null)
-        }
-    }
-
 
     Scaffold(
         containerColor = TuneBackground,
@@ -235,24 +111,8 @@ fun TuneScreen(
             if (microphoneState != MicrophoneState.LISTENING) {
                 MicrophoneStatusCard(
                     state = microphoneState,
-                    onRetry = {
-                        if (!hasMicrophonePermission) {
-                            permissionRequested = true
-                            microphoneState = MicrophoneState.PERMISSION_PENDING
-                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        } else {
-                            microphoneState = MicrophoneState.PERMISSION_GRANTED
-                            retryToken++
-                        }
-                    },
-                    onOpenSettings = {
-                        context.startActivity(
-                            Intent(
-                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.parse("package:${context.packageName}")
-                            )
-                        )
-                    }
+                    onRetry = onRetry,
+                    onOpenSettings = onOpenSettings
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -390,7 +250,7 @@ fun TuneScreen(
                                     guitarString.id == selectedStringId,
                                 enabled = mode == TuningMode.MANUAL,
                                 onClick = {
-                                    tuningState = tracker.selectString(guitarString.id)
+                                    onSelectString(guitarString.id)
                                 }
                             )
                         }
@@ -455,12 +315,6 @@ private fun MicrophoneStatusCard(
             }
         }
     }
-}
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }
 
 @Composable

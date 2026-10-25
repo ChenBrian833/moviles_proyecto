@@ -16,12 +16,12 @@ class GuitarPitchDetector(
     private val referencePitch: Int = DEFAULT_REFERENCE_PITCH,
     private val onPitchDetected: (DetectedPitch?) -> Unit,
     private val onStateChanged: (MicrophoneState) -> Unit = {}
-) {
+) : PitchCapture {
     @Volatile private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
     @Volatile private var isRunning = false
 
-    fun start() {
+    override fun start() {
         if (isRunning || ContextCompat.checkSelfPermission(
                 context, Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
@@ -150,7 +150,7 @@ class GuitarPitchDetector(
         }
     }
 
-    fun stop() {
+    override fun stop() {
         isRunning = false
         try {
             audioRecord?.stop()

@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -124,7 +125,7 @@ fun LoadingScreen() {
             Box(Modifier.size(8.dp).alpha(dotAlpha).background(teal, CircleShape))
             Spacer(Modifier.width(12.dp))
             Text(
-                text = "CALIBRATING MIC...",
+                text = stringResource(R.string.loading_settings),
                 color = teal,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,

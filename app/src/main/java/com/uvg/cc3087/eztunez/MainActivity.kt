@@ -5,10 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.uvg.cc3087.eztunez.ui.theme.EztunezTheme
-import kotlinx.coroutines.delay
-import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -16,6 +15,19 @@ import androidx.core.view.WindowInsetsControllerCompat
 class MainActivity : ComponentActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels {
         SettingsViewModel.Factory(DataStoreSettingsRepository(applicationContext))
+    }
+    private val tunerViewModel: TunerViewModel by viewModels {
+        // The retained ViewModel's factory captures only the application context.
+        val appContext = applicationContext
+        TunerViewModel.Factory(
+            captureFactory = PitchCaptureFactory { threshold, reference, onPitch, onState ->
+                GuitarPitchDetector(appContext, threshold, reference, onPitch, onState)
+            },
+            nowMs = android.os.SystemClock::elapsedRealtime
+        )
+    }
+    private val presetsViewModel: TuningPresetsViewModel by viewModels {
+        TuningPresetsViewModel.Factory(BuiltInTuningPresetRepository())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,12 +48,21 @@ class MainActivity : ComponentActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         setContent {
-            val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+            val settings = settingsViewModel.settings.collectAsStateWithLifecycle().value
             EztunezTheme(
-                darkTheme = settings.darkTheme,
+                darkTheme = settings?.darkTheme ?: true,
                 dynamicColor = false
             ) {
-                App(settings = settings, settingsViewModel = settingsViewModel)
+                if (settings == null) {
+                    LoadingScreen()
+                } else {
+                    App(
+                        settings = settings,
+                        settingsViewModel = settingsViewModel,
+                        tunerViewModel = tunerViewModel,
+                        presetsViewModel = presetsViewModel
+                    )
+                }
             }
         }
     }
@@ -50,78 +71,50 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun App(
     settings: TunerSettings,
-    settingsViewModel: SettingsViewModel
+    settingsViewModel: SettingsViewModel,
+    tunerViewModel: TunerViewModel,
+    presetsViewModel: TuningPresetsViewModel
 ) {
 
-    var showLoadingScreen by remember {
-        mutableStateOf(true)
-    }
-
-    var currentScreen by remember {
+    var currentScreen by rememberSaveable {
         mutableStateOf(AppScreen.HOME)
     }
+    var tuningMode by rememberSaveable { mutableStateOf(TuningMode.AUTO) }
 
-    var tuningMode by remember { mutableStateOf(TuningMode.AUTO) }
-
-    LaunchedEffect(Unit) {
-        delay(1500)
-        showLoadingScreen = false
-    }
-
-    if (showLoadingScreen) {
-
-        LoadingScreen()
-
-    } else {
-
-        when (currentScreen) {
-
-            AppScreen.PRESETS -> {
-                TuningPresetsScreen(
-                    onNavigate = {
-                        currentScreen = it
-                    }
-                )
+    val navigateTo: (AppScreen) -> Unit = { destination ->
+        if (destination != currentScreen) {
+            // Ending a screen visit is different from recreating its UI on rotation.
+            when (currentScreen) {
+                AppScreen.TUNE -> tunerViewModel.endSession()
+                AppScreen.PRESETS -> presetsViewModel.endSession()
+                else -> Unit
             }
-
-            AppScreen.SETTINGS -> {
-                SettingsScreen(
-                    settings = settings,
-                    onMicSensitivityChange = settingsViewModel::updateMicSensitivity,
-                    onReferencePitchChange = settingsViewModel::updateReferencePitch,
-                    onDarkThemeChange = settingsViewModel::updateDarkTheme,
-                    onShowRealTimeHzChange = settingsViewModel::updateShowRealTimeHz,
-                    onNotationSystemChange = settingsViewModel::updateNotationSystem,
-                    onNavigate = {
-                        currentScreen = it
-                    }
-                )
-            }
-
-
-            AppScreen.HOME -> {
-                HomeScreen(
-                    onNavigate = {
-                        currentScreen = it
-                    },
-                    onStartTuning = { mode ->
-                        tuningMode = mode
-                        currentScreen = AppScreen.TUNE
-                    }
-                )
-            }
-
-            AppScreen.TUNE -> {
-                TuneScreen(
-                    mode = tuningMode,
-                    settings = settings,
-                    onNavigate = {
-                        currentScreen = it
-                    }
-                )
-            }
+            currentScreen = destination
         }
     }
-}
 
-//
+    when (currentScreen) {
+        AppScreen.PRESETS -> TuningPresetsRoute(
+            viewModel = presetsViewModel,
+            onNavigate = navigateTo
+        )
+        AppScreen.SETTINGS -> SettingsRoute(
+            viewModel = settingsViewModel,
+            settings = settings,
+            onNavigate = navigateTo
+        )
+        AppScreen.HOME -> HomeScreen(
+            onNavigate = navigateTo,
+            onStartTuning = { mode ->
+                tuningMode = mode
+                navigateTo(AppScreen.TUNE)
+            }
+        )
+        AppScreen.TUNE -> TunerRoute(
+            viewModel = tunerViewModel,
+            mode = tuningMode,
+            settings = settings,
+            onNavigate = navigateTo
+        )
+    }
+}
