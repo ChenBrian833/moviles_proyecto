@@ -95,8 +95,11 @@ de audio en el estado de Android.
 
 El indicador de carga aparece únicamente mientras llega la primera lectura de
 DataStore, sin temporizador ni calibración de micrófono simulada. Los ajustes ya
-cargados se conservan durante la recreación. El control de captura al pasar a
-segundo plano sigue pendiente. La restauración de selecciones de los ViewModels
+cargados se conservan durante la recreación. La captura solo se inicia con permiso
+y con el afinador en estado `RESUMED`. Al pausar, bloquear o dejar la aplicación se
+libera el micrófono; al volver se comprueba el permiso y se inicia una nueva captura
+con el mismo objetivo. Los reintentos usan la misma condición de ciclo de vida.
+La restauración de selecciones de los ViewModels
 después de que Android termine el proceso también queda pendiente.
 
 Las pruebas de ViewModels usan una captura falsa y un reloj controlado para

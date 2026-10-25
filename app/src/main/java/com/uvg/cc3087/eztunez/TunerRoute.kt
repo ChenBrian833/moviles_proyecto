@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,7 +42,11 @@ fun TunerRoute(
     var hasMicrophonePermission by remember {
         mutableStateOf(context.hasMicrophonePermission())
     }
+    var isResumed by remember(lifecycleOwner) {
+        mutableStateOf(false)
+    }
     var permissionRequested by rememberSaveable { mutableStateOf(false) }
+    var captureRequestToken by remember(lifecycleOwner) { mutableIntStateOf(0) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -63,15 +68,26 @@ fun TunerRoute(
 
     DisposableEffect(lifecycleOwner, context, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                val granted = context.hasMicrophonePermission()
-                if (granted != hasMicrophonePermission) {
-                    hasMicrophonePermission = granted
-                    viewModel.setMicrophoneState(
-                        if (granted) MicrophoneState.PERMISSION_GRANTED
-                        else MicrophoneState.PERMISSION_DENIED
-                    )
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    val granted = context.hasMicrophonePermission()
+                    if (granted != hasMicrophonePermission) {
+                        hasMicrophonePermission = granted
+                        viewModel.setMicrophoneState(
+                            if (granted) MicrophoneState.PERMISSION_GRANTED
+                            else MicrophoneState.PERMISSION_DENIED
+                        )
+                    }
+                    isResumed = true
+                    // Also restart after a pause/resume that occurs between Compose frames.
+                    captureRequestToken++
                 }
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP, Lifecycle.Event.ON_DESTROY -> {
+                    isResumed = false
+                    // Release capture immediately; do not wait for recomposition or disposal.
+                    viewModel.stopListening()
+                }
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -85,9 +101,20 @@ fun TunerRoute(
         }
     }
 
-    DisposableEffect(viewModel, mode, settings.referencePitch, settings.micSensitivity, hasMicrophonePermission) {
+    DisposableEffect(
+        viewModel,
+        lifecycleOwner,
+        mode,
+        settings.referencePitch,
+        settings.micSensitivity,
+        hasMicrophonePermission,
+        isResumed,
+        captureRequestToken
+    ) {
         viewModel.configure(mode, settings.referencePitch)
-        if (hasMicrophonePermission) {
+        if (hasMicrophonePermission && isResumed &&
+            lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+        ) {
             viewModel.setMicrophoneState(MicrophoneState.PERMISSION_GRANTED)
             viewModel.startListening(settings.micSensitivity)
         }
@@ -106,7 +133,8 @@ fun TunerRoute(
                 permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             } else {
                 viewModel.setMicrophoneState(MicrophoneState.PERMISSION_GRANTED)
-                viewModel.startListening(settings.micSensitivity)
+                // Retry through the same lifecycle gate as every other capture start.
+                captureRequestToken++
             }
         },
         onOpenSettings = {
