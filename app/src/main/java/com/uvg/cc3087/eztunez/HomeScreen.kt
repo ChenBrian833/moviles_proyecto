@@ -38,6 +38,9 @@ fun HomeScreen(
         SnackbarHostState()
     }
 
+    val changeInstrumentMessage = stringResource(R.string.change_instrument)
+    val chromaticMessage = stringResource(R.string.chromatic_coming_soon)
+    val metronomeMessage = stringResource(R.string.metronome_coming_soon)
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -51,10 +54,10 @@ fun HomeScreen(
 
         topBar = {
             ScreenHeader(
-                title = "EzTunez",
+                title = stringResource(R.string.app_name),
                 trailingContent = {
                     Text(
-                        text = "♬",
+                        text = stringResource(R.string.symbol_music),
                         color = HomeText,
                         fontSize = 24.sp
                     )
@@ -120,7 +123,7 @@ fun HomeScreen(
                                 ) {
 
                                     Text(
-                                        text = "♬",
+                                        text = stringResource(R.string.symbol_music),
                                         color = HomeTeal,
                                         fontSize = 24.sp
                                     )
@@ -134,7 +137,7 @@ fun HomeScreen(
                             Column(modifier = Modifier.weight(1f)) {
 
                                 Text(
-                                    text = "Acoustic Guitar",
+                                    text = stringResource(R.string.instrument_acoustic_guitar),
                                     color = HomeText,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold
@@ -147,7 +150,7 @@ fun HomeScreen(
                                 Text(
                                     text = stringResource(
                                         R.string.current_tuning,
-                                        preset.name,
+                                        preset.localizedName(),
                                         preset.midiNotes.joinToString(" ") {
                                             formatNote(
                                                 noteNameForMidi(it, preset.preferFlats, includeOctave = false),
@@ -171,7 +174,7 @@ fun HomeScreen(
                             onClick = {
                                 scope.launch {
                                     snackbarHostState.showSnackbar(
-                                        message = "Change Instrument",
+                                        message = changeInstrumentMessage,
                                         duration = SnackbarDuration.Short
                                     )
                                 }
@@ -199,7 +202,7 @@ fun HomeScreen(
                         ) {
 
                             Text(
-                                text = "▣",
+                                text = stringResource(R.string.symbol_instrument),
                                 color = HomeTeal,
                                 fontSize = 16.sp
                             )
@@ -209,7 +212,7 @@ fun HomeScreen(
                             )
 
                             Text(
-                                text = "Change Instrument",
+                                text = stringResource(R.string.change_instrument),
                                 modifier = Modifier.weight(1f),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                 fontSize = 14.sp,
@@ -225,7 +228,7 @@ fun HomeScreen(
                 )
 
                 Text(
-                    text = "TUNING MODES",
+                    text = stringResource(R.string.tuning_modes),
                     color = HomeSecondary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
@@ -238,9 +241,9 @@ fun HomeScreen(
                 // Auto tune
 
                 HomeModeCard(
-                    title = "Auto Tune",
-                    description = "Hands-free automatic string detection",
-                    symbol = "♩",
+                    title = stringResource(R.string.mode_auto),
+                    description = stringResource(R.string.mode_auto_description),
+                    symbol = stringResource(R.string.symbol_auto),
                     selected = true,
                     onClick = {
                         onStartTuning(TuningMode.AUTO)
@@ -254,9 +257,9 @@ fun HomeScreen(
                 //manual
 
                 HomeModeCard(
-                    title = "Manual Tune",
-                    description = "Select and tune strings individually",
-                    symbol = "〰",
+                    title = stringResource(R.string.mode_manual),
+                    description = stringResource(R.string.mode_manual_description),
+                    symbol = stringResource(R.string.symbol_manual),
                     onClick = {
                         onStartTuning(TuningMode.MANUAL)
                     }
@@ -269,13 +272,13 @@ fun HomeScreen(
                 //chromatic
 
                 HomeModeCard(
-                    title = "Chromatic Tuner",
-                    description = "Tune to any of the 12 chromatic pitches",
-                    symbol = "♪",
+                    title = stringResource(R.string.mode_chromatic),
+                    description = stringResource(R.string.mode_chromatic_description),
+                    symbol = stringResource(R.string.symbol_chromatic),
                     onClick = {
                         scope.launch {
                             snackbarHostState.showSnackbar(
-                                message = "Chromatic Tuner coming soon",
+                                message = chromaticMessage,
                                 duration = SnackbarDuration.Short
                             )
                         }
@@ -293,13 +296,13 @@ fun HomeScreen(
                  */
 
                 HomeModeCard(
-                    title = "Metronome",
-                    description = "Keep rhythm with visual and audio beats",
-                    symbol = "♩",
+                    title = stringResource(R.string.metronome),
+                    description = stringResource(R.string.metronome_description),
+                    symbol = stringResource(R.string.symbol_auto),
                     onClick = {
                         scope.launch {
                             snackbarHostState.showSnackbar(
-                                message = "Metronome coming soon",
+                                message = metronomeMessage,
                                 duration = SnackbarDuration.Short
                             )
                         }
@@ -428,7 +431,7 @@ private fun HomeModeCard(
              */
 
             Text(
-                text = "›",
+                text = stringResource(R.string.symbol_chevron),
 
                 color = if (selected) {
                     HomeText

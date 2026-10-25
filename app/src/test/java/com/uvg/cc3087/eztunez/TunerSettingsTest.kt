@@ -3,6 +3,7 @@ package com.uvg.cc3087.eztunez
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 class TunerSettingsTest {
     @Test fun sensitivityLimitsAndDefaultMatchTheEstablishedGate() {
@@ -55,9 +56,11 @@ class TunerSettingsTest {
         val pitch = DetectedPitch(110f, "A2", 0f, 0.9f)
         assertEquals(
             "A2 · 110.0 Hz",
-            formatPitchDisplay(pitch, true, NotationSystem.STANDARD)
+            formatPitchDisplay(pitch, true, NotationSystem.STANDARD, "%1\$s · %2\$.1f Hz", "--", "-- Hz", Locale.US)
         )
-        assertEquals("A2", formatPitchDisplay(pitch, false, NotationSystem.STANDARD))
+        assertEquals("A2", formatPitchDisplay(pitch, false, NotationSystem.STANDARD, "%1\$s · %2\$.1f Hz", "--", "-- Hz", Locale.US))
+        assertEquals("A2 · 110,0 Hz", formatPitchDisplay(pitch, true, NotationSystem.STANDARD, "%1\$s · %2\$.1f Hz", "--", "-- Hz", Locale.GERMANY))
+        assertEquals("-- Hz", formatPitchDisplay(null, true, NotationSystem.STANDARD, "%1\$s · %2\$.1f Hz", "--", "-- Hz", Locale.US))
         assertEquals(110f, pitch.frequency, 0f)
     }
 }

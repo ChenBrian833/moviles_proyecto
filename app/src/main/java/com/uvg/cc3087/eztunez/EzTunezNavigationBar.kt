@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 
@@ -38,14 +39,14 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.Home,
-                    contentDescription = "Home"
+                    contentDescription = stringResource(R.string.nav_home)
                 )
             },
 
 
 
 
-            label = if (showLabels) { { Text("Home") } } else null,
+            label = if (showLabels) { { Text(stringResource(R.string.nav_home)) } } else null,
             colors = navigationColors()
         )
 
@@ -57,10 +58,10 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Tune"
+                    contentDescription = stringResource(R.string.nav_tune)
                 )
             },
-            label = if (showLabels) { { Text("Tune") } } else null,
+            label = if (showLabels) { { Text(stringResource(R.string.nav_tune)) } } else null,
             colors = navigationColors()
         )
 
@@ -72,10 +73,10 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.List,
-                    contentDescription = "Presets"
+                    contentDescription = stringResource(R.string.nav_presets)
                 )
             },
-            label = if (showLabels) { { Text("Presets") } } else null,
+            label = if (showLabels) { { Text(stringResource(R.string.nav_presets)) } } else null,
             colors = navigationColors()
         )
 
@@ -87,10 +88,10 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings"
+                    contentDescription = stringResource(R.string.nav_settings)
                 )
             },
-            label = if (showLabels) { { Text("Settings") } } else null,
+            label = if (showLabels) { { Text(stringResource(R.string.nav_settings)) } } else null,
             colors = navigationColors()
         )
     }

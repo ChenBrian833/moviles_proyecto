@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -63,11 +64,11 @@ fun TuneScreen(
 
         topBar = {
             ScreenHeader(
-                title = "Acoustic",
+                title = stringResource(R.string.instrument_acoustic),
                 subtitle = stringResource(
                     R.string.tuning_mode_subtitle,
-                    preset.name,
-                    if (mode == TuningMode.AUTO) "Auto Tune" else "Manual Tune"
+                    preset.localizedName(),
+                    if (mode == TuningMode.AUTO) stringResource(R.string.mode_auto) else stringResource(R.string.mode_manual)
                 )
             )
         },
@@ -127,7 +128,11 @@ fun TuneScreen(
                     text = formatPitchDisplay(
                         detectedPitch,
                         settings.showRealTimeHz,
-                        settings.notationSystem
+                        settings.notationSystem,
+                        frequencyPattern = stringResource(R.string.note_frequency),
+                        noSignal = stringResource(R.string.no_signal),
+                        noSignalHz = stringResource(R.string.no_signal_hz),
+                        locale = LocalConfiguration.current.locales[0]
                     ),
 
                     style = MaterialTheme.typography.titleLarge,
@@ -164,19 +169,19 @@ fun TuneScreen(
                     text = when {
 
                         detectedPitch == null -> {
-                            "Play a string"
+                            stringResource(R.string.play_string)
                         }
 
                         isInTune -> {
-                            "In Tune ✓"
+                            stringResource(R.string.in_tune)
                         }
 
                         centsOffset < 0 -> {
-                            "Tune Up"
+                            stringResource(R.string.tune_up)
                         }
 
                         else -> {
-                            "Tune Down"
+                            stringResource(R.string.tune_down)
                         }
                     },
 
@@ -198,10 +203,13 @@ fun TuneScreen(
 
                 Text(
                     text = if (detectedPitch != null) {
-                        "${formatNote(selectedString.note, settings.notationSystem)} offset: %.1f cents"
-                            .format(centsOffset)
+                        stringResource(
+                            R.string.note_offset,
+                            formatNote(selectedString.note, settings.notationSystem),
+                            centsOffset
+                        )
                     } else {
-                        microphoneState.message()
+                        stringResource(microphoneState.messageRes)
                     },
 
                     style = MaterialTheme.typography.bodyLarge,
@@ -276,7 +284,7 @@ fun TuneScreen(
                         )
 
                         Text(
-                            text = "${(detectionConfidence * 100).toInt()}%",
+                            text = stringResource(R.string.percent_value, (detectionConfidence * 100).toInt()),
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.End,
                             style = MaterialTheme.typography.bodyMedium,
@@ -303,12 +311,12 @@ private fun MicrophoneStatusCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(state.message(), color = TuneText)
+            Text(stringResource(state.messageRes), color = TuneText)
             if (state.canRetry || state == MicrophoneState.PERMISSION_PENDING) {
-                TextButton(onClick = onRetry) { Text("Retry") }
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
             if (state == MicrophoneState.PERMISSION_PERMANENTLY_DENIED) {
-                TextButton(onClick = onOpenSettings) { Text("Open app settings") }
+                TextButton(onClick = onOpenSettings) { Text(stringResource(R.string.open_app_settings)) }
             }
         }
     }

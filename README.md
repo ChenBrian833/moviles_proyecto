@@ -121,6 +121,11 @@ Los cambios pendientes se agrupan y guardan en orden mediante una edición atóm
 de DataStore, omitiendo valores sin cambios. Si falla una escritura, Settings
 muestra un error persistente con reintento; las opciones siguen activas en la sesión.
 
+Los textos visibles, mensajes de micrófono, etiquetas accesibles y descripciones de
+presets integrados se definen en `app/src/main/res/values/strings.xml`. Los valores
+variables usan marcadores indexados; los presets personalizados mantienen su texto.
+La notación musical y las claves persistidas no se traducen.
+
 Home y Tune usan contenido desplazable con ancho máximo centrado. Sus encabezados,
 tarjetas y controles crecen con el texto; las cuerdas se distribuyen en varias filas
 cuando no caben y el medidor respeta tanto su ancho como su altura.

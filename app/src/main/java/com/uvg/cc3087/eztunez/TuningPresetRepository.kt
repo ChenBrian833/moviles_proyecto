@@ -12,9 +12,9 @@ class BuiltInTuningPresetRepository : TuningPresetRepository {
 object BuiltInTuningPresets {
     val standard = TuningPreset(
         id = 1,
-        name = "Standard",
+        nameRes = R.string.preset_standard,
         midiNotes = listOf(40, 45, 50, 55, 59, 64), // E2 A2 D3 G3 B3 E4
-        description = "Common layout suitable for most acoustic & electric guitars",
+        descriptionRes = R.string.preset_standard_description,
         category = PresetCategory.GUITAR
     )
 
@@ -22,30 +22,30 @@ object BuiltInTuningPresets {
         standard,
         TuningPreset(
             id = 2,
-            name = "Drop D",
+            nameRes = R.string.preset_drop_d,
             midiNotes = listOf(38, 45, 50, 55, 59, 64), // D2 A2 D3 G3 B3 E4
-            description = "Heavy low response, lower the 6th string a whole step",
+            descriptionRes = R.string.preset_drop_d_description,
             category = PresetCategory.GUITAR
         ),
         TuningPreset(
             id = 3,
-            name = "Open G",
+            nameRes = R.string.preset_open_g,
             midiNotes = listOf(38, 43, 50, 55, 59, 62), // D2 G2 D3 G3 B3 D4
-            description = "Popular for slide blues playing & folk compositions",
+            descriptionRes = R.string.preset_open_g_description,
             category = PresetCategory.GUITAR
         ),
         TuningPreset(
             id = 4,
-            name = "DADGAD Tuning",
+            nameRes = R.string.preset_dadgad,
             midiNotes = listOf(38, 45, 50, 55, 57, 62), // D2 A2 D3 G3 A3 D4
-            description = "Celtic folk tuning with rich natural resonance",
+            descriptionRes = R.string.preset_dadgad_description,
             category = PresetCategory.GUITAR
         ),
         TuningPreset(
             id = 5,
-            name = "Half Step Down",
+            nameRes = R.string.preset_half_step_down,
             midiNotes = listOf(39, 44, 49, 54, 58, 63), // Eb2 Ab2 Db3 Gb3 Bb3 Eb4
-            description = "Standard relative pitches, lowered by one semitone",
+            descriptionRes = R.string.preset_half_step_down_description,
             category = PresetCategory.GUITAR,
             preferFlats = true
         )

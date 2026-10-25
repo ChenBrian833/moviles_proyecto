@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,8 @@ fun TuningPresetsScreen(
         SnackbarHostState()
     }
 
+    val searchMessage = stringResource(R.string.search)
+    val createCustomMessage = stringResource(R.string.create_custom)
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -61,7 +64,7 @@ fun TuningPresetsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Tuning Presets",
+                        text = stringResource(R.string.tuning_presets),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryText
@@ -75,15 +78,13 @@ fun TuningPresetsScreen(
                     IconButton(
                         onClick = {
                             scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    "Search"
-                                )
+                                snackbarHostState.showSnackbar(searchMessage)
                             }
                         }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
+                            contentDescription = stringResource(R.string.search),
                             tint = PrimaryText,
                             modifier = Modifier.size(32.dp)
                         )
@@ -100,9 +101,7 @@ fun TuningPresetsScreen(
             ExtendedFloatingActionButton(
                 onClick = {
                     scope.launch {
-                        snackbarHostState.showSnackbar(
-                            "Create Custom"
-                        )
+                        snackbarHostState.showSnackbar(createCustomMessage)
                     }
                 },
 
@@ -113,13 +112,13 @@ fun TuningPresetsScreen(
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Create custom tuning"
+                        contentDescription = stringResource(R.string.create_custom_tuning)
                     )
                 },
 
                 text = {
                     Text(
-                        text = "Create Custom",
+                        text = stringResource(R.string.create_custom),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -166,6 +165,7 @@ fun TuningPresetsScreen(
                         preset.id
                     }
                 ) { preset ->
+                    val selectedMessage = stringResource(R.string.preset_selected, preset.localizedName())
 
                     TuningPresetCard(
                         preset = preset,
@@ -179,7 +179,7 @@ fun TuningPresetsScreen(
 
                             scope.launch {
                                 snackbarHostState.showSnackbar(
-                                    "${preset.name} selected",
+                                    selectedMessage,
                                     duration = SnackbarDuration.Short
 
                                 )
@@ -218,7 +218,7 @@ private fun PresetFilterBar(
         ) {
 
             FilterButton(
-                text = "All Presets",
+                text = stringResource(R.string.all_presets),
                 selected = selectedFilter == PresetFilter.ALL,
                 modifier = Modifier.weight(1f),
                 onClick = {
@@ -229,7 +229,7 @@ private fun PresetFilterBar(
             )
 
             FilterButton(
-                text = "Guitar",
+                text = stringResource(R.string.filter_guitar),
                 selected = selectedFilter == PresetFilter.GUITAR,
                 modifier = Modifier.weight(1f),
                 onClick = {
@@ -240,7 +240,7 @@ private fun PresetFilterBar(
             )
 
             FilterButton(
-                text = "Custom",
+                text = stringResource(R.string.filter_custom),
                 selected = selectedFilter == PresetFilter.CUSTOM,
                 modifier = Modifier.weight(1f),
                 onClick = {
@@ -345,9 +345,9 @@ fun TuningPresetCard(
 
                 Text(
                     text = if (preset.tuning.isBlank()) {
-                        preset.name
+                        preset.localizedName()
                     } else {
-                        "${preset.name} — ${preset.tuning}"
+                        stringResource(R.string.preset_title, preset.localizedName(), preset.tuning)
                     },
 
                     modifier = Modifier.weight(1f),
@@ -364,7 +364,7 @@ fun TuningPresetCard(
 
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Currently selected",
+                        contentDescription = stringResource(R.string.currently_selected_description),
                         tint = Teal,
                         modifier = Modifier.size(28.dp)
                     )
@@ -376,7 +376,7 @@ fun TuningPresetCard(
             )
 
             Text(
-                text = preset.description,
+                text = preset.localizedDescription(),
                 style = MaterialTheme.typography.bodyLarge,
                 color = SecondaryText
             )
@@ -387,9 +387,9 @@ fun TuningPresetCard(
 
             Text(
                 text = if (isSelected) {
-                    "Currently Selected"
+                    stringResource(R.string.currently_selected)
                 } else {
-                    "Select Tuning"
+                    stringResource(R.string.select_tuning)
                 },
 
                 modifier = Modifier.align(

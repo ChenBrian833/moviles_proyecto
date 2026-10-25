@@ -54,7 +54,7 @@ class TuningPresetsViewModelTest {
         val selected = viewModel.uiState.value.presets.single {
             it.id == viewModel.uiState.value.selectedPresetId
         }
-        assertEquals("Standard", selected.name)
+        assertEquals(R.string.preset_standard, selected.nameRes)
         assertEquals("E A D G B E", selected.tuning)
         viewModel.selectFilter(PresetFilter.CUSTOM)
         assertTrue(viewModel.uiState.value.presets.isEmpty())
