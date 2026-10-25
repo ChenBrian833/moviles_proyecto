@@ -82,6 +82,11 @@ La compilación automatizada no sustituye esta verificación acústica en hardwa
 - `TunerViewModel` coordina `TuningTracker` y la interfaz `PitchCapture` mediante
   `StateFlow`. `GuitarPitchDetector` implementa la captura; YIN y sus umbrales no
   cambian. Los callbacks de capturas anteriores se descartan al detener o reintentar.
+- `QueuedPitchCaptureFactory` ejecuta la creación, inicio y parada del driver en
+  una cola de trabajo compartida. La UI solicita la parada y limpia su lectura sin
+  esperar operaciones nativas ni `join`. La siguiente captura espera a que termine
+  la limpieza anterior, incluso si el ViewModel ya fue eliminado. El hilo lector
+  libera su `AudioRecord` en `finally`, también si falla la recuperación.
 - `TuningPresetsRoute` conecta la pantalla con `TuningPresetsViewModel`; el catálogo
   local vive en `TuningPresetRepository`. Cada preset define seis notas MIDI con
   octavas. La selección compartida configura Home, Tune, el tracker y las referencias
@@ -101,7 +106,7 @@ El indicador de carga aparece únicamente mientras llega la primera lectura de
 DataStore, sin temporizador ni calibración de micrófono simulada. Los ajustes ya
 cargados se conservan durante la recreación. La captura solo se inicia con permiso
 y con el afinador en estado `RESUMED`. Al pausar, bloquear o dejar la aplicación se
-libera el micrófono; al volver se comprueba el permiso y se inicia una nueva captura
+solicita liberar el micrófono en segundo plano; al volver se comprueba el permiso y se inicia una nueva captura
 con el mismo objetivo. Los reintentos usan la misma condición de ciclo de vida.
 Al detenerse la captura o recibir un error de micrófono se borran inmediatamente
 la medición, los cents y el historial de suavizado, conservando la cuerda elegida.
@@ -109,6 +114,12 @@ Un callback tardío no puede restablecer una lectura de una captura detenida. La
 pausas breves de señal durante una captura activa mantienen su tolerancia habitual.
 La restauración de selecciones de los ViewModels
 después de que Android termine el proceso también queda pendiente.
+
+Los ajustes se aplican inmediatamente en memoria. La sensibilidad se guarda al
+terminar el gesto (también al salir o pasar a segundo plano si se interrumpe).
+Los cambios pendientes se agrupan y guardan en orden mediante una edición atómica
+de DataStore, omitiendo valores sin cambios. Si falla una escritura, Settings
+muestra un error persistente con reintento; las opciones siguen activas en la sesión.
 
 Las pruebas de ViewModels usan una captura falsa y un reloj controlado para
 verificar selección manual/automática, cambios de sensibilidad y A4, reintentos,

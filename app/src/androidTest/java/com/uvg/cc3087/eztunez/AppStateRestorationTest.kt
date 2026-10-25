@@ -137,6 +137,7 @@ class AppStateRestorationTest {
 
     private class MemorySettingsRepository : SettingsRepository {
         override val settings = MutableStateFlow(TunerSettings())
+        override suspend fun saveSettings(settings: TunerSettings) { this.settings.value = settings }
         override suspend fun setMicSensitivity(value: Float) { settings.value = settings.value.copy(micSensitivity = value) }
         override suspend fun setReferencePitch(value: Int) { settings.value = settings.value.copy(referencePitch = value) }
         override suspend fun setShowRealTimeHz(value: Boolean) { settings.value = settings.value.copy(showRealTimeHz = value) }

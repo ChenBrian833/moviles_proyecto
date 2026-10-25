@@ -85,7 +85,7 @@ fun TunerRoute(
                 }
                 Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP, Lifecycle.Event.ON_DESTROY -> {
                     isResumed = false
-                    // Release capture immediately; do not wait for recomposition or disposal.
+                    // Request shutdown now; native cleanup runs off the UI thread.
                     viewModel.stopListening()
                 }
                 else -> Unit

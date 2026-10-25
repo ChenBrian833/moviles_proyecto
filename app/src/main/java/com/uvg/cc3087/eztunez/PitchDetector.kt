@@ -7,9 +7,11 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import androidx.annotation.WorkerThread
 import androidx.core.content.ContextCompat
 import kotlin.concurrent.thread
 
+/** Blocking driver; production calls are serialized by QueuedPitchCaptureFactory. */
 class GuitarPitchDetector(
     private val context: Context,
     private val rmsThreshold: Float = DEFAULT_RMS_THRESHOLD,
@@ -22,8 +24,10 @@ class GuitarPitchDetector(
     private var recordingThread: Thread? = null
     @Volatile private var isRunning = false
 
+    @WorkerThread
     override fun start() {
-        if (isRunning || ContextCompat.checkSelfPermission(
+        if (isRunning) return
+        if (ContextCompat.checkSelfPermission(
                 context, Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -40,8 +44,18 @@ class GuitarPitchDetector(
         audioRecord = record
         isRunning = true
         onStateChanged(MicrophoneState.LISTENING)
-        recordingThread = thread(start = true, name = "EzTunez-Microphone") {
-            readMicrophone(record)
+        var launched = false
+        try {
+            recordingThread = thread(start = true, name = "EzTunez-Microphone") {
+                readMicrophone(record)
+            }
+            launched = true
+        } finally {
+            if (!launched) {
+                isRunning = false
+                audioRecord = null
+                releaseRecorder(record)
+            }
         }
     }
 
@@ -97,73 +111,94 @@ class GuitarPitchDetector(
     }
 
     private fun readMicrophone(initialRecord: AudioRecord) {
-        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
-        val shorts = ShortArray(GuitarSignalAnalyzer.HOP_SIZE)
-        val samples = FloatArray(GuitarSignalAnalyzer.HOP_SIZE)
-        var analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch, preset)
-        var record = initialRecord
-        var filled = 0
-        var recoveries = 0
-        while (isRunning) {
-            val count = try {
-                record.read(shorts, filled, shorts.size - filled)
-            } catch (_: IllegalStateException) {
-                break
-            } catch (_: SecurityException) {
-                break
-            }
-            if (!isRunning) break
-            if (count < 0) {
-                onPitchDetected(null)
-                // A dead AudioRecord otherwise loops forever without hearing anything.
-                if (count != AudioRecord.ERROR_DEAD_OBJECT || recoveries >= 2) break
-                record.release()
-                val replacementResult = openRecorder()
-                val replacement = replacementResult.record
-                if (replacement == null) {
+        var record: AudioRecord? = initialRecord
+        try {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
+            val shorts = ShortArray(GuitarSignalAnalyzer.HOP_SIZE)
+            val samples = FloatArray(GuitarSignalAnalyzer.HOP_SIZE)
+            var analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch, preset)
+            var filled = 0
+            var recoveries = 0
+            while (isRunning) {
+                val currentRecord = record ?: break
+                val count = try {
+                    currentRecord.read(shorts, filled, shorts.size - filled)
+                } catch (_: IllegalStateException) {
+                    break
+                } catch (_: SecurityException) {
                     break
                 }
-                // stop() can run while the replacement is being opened.
-                audioRecord = replacement
-                if (!isRunning) {
-                    replacement.release()
+                if (!isRunning) break
+                if (count < 0) {
+                    onPitchDetected(null)
+                    if (count != AudioRecord.ERROR_DEAD_OBJECT || recoveries >= 2) break
+                    // This thread owns release, including any replacement opened during stop().
                     audioRecord = null
-                    return
+                    record = null
+                    releaseRecorder(currentRecord)
+                    if (!isRunning) break
+                    val replacement = openRecorder().record ?: break
+                    record = replacement
+                    audioRecord = replacement
+                    if (!isRunning) break
+                    analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch, preset)
+                    filled = 0
+                    recoveries++
+                    continue
                 }
-                record = replacement
-                analyzer = GuitarSignalAnalyzer(rmsThreshold, referencePitch, preset)
+                if (count == 0) continue
+                filled += count
+                if (filled < shorts.size) continue
                 filled = 0
-                recoveries++
-                continue
+                recoveries = 0
+                for (i in shorts.indices) samples[i] = shorts[i] / 32768f
+                onPitchDetected(analyzer.analyze(samples))
             }
-            if (count == 0) continue
-            filled += count
-            if (filled < shorts.size) continue
-            filled = 0
-            recoveries = 0
-            for (i in shorts.indices) samples[i] = shorts[i] / 32768f
-            onPitchDetected(analyzer.analyze(samples))
-        }
-        if (isRunning) {
+        } catch (_: RuntimeException) {
+            // Driver/DSP failures are reported as interruptions after releasing the recorder.
+        } finally {
+            val interrupted = isRunning
             isRunning = false
-            onPitchDetected(null)
-            onStateChanged(MicrophoneState.CAPTURE_INTERRUPTED)
+            audioRecord = null
+            record?.let(::releaseRecorder)
+            if (interrupted) {
+                onPitchDetected(null)
+                onStateChanged(MicrophoneState.CAPTURE_INTERRUPTED)
+            }
         }
     }
 
+    private fun releaseRecorder(record: AudioRecord) {
+        try {
+            record.stop()
+        } catch (_: IllegalStateException) {
+        } catch (_: SecurityException) {
+        } finally {
+            record.release()
+        }
+    }
+
+    @WorkerThread
     override fun stop() {
         isRunning = false
         try {
             audioRecord?.stop()
         } catch (_: IllegalStateException) {
+        } catch (_: SecurityException) {
         }
-        try {
-            recordingThread?.join(300)
-        } catch (_: InterruptedException) {
-            Thread.currentThread().interrupt()
+        val worker = recordingThread
+        var interrupted = false
+        if (worker != null && worker !== Thread.currentThread()) {
+            // Wait on the control worker, so the next capture cannot overlap old cleanup.
+            while (worker.isAlive) {
+                try {
+                    worker.join()
+                } catch (_: InterruptedException) {
+                    interrupted = true
+                }
+            }
         }
-        audioRecord?.release()
-        audioRecord = null
         recordingThread = null
+        if (interrupted) Thread.currentThread().interrupt()
     }
 }

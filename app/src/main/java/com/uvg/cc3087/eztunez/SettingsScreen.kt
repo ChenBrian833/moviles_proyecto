@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -28,15 +29,33 @@ private val SettingsDivider: Color @Composable get() = MaterialTheme.colorScheme
 fun SettingsScreen(
     settings: TunerSettings,
     onMicSensitivityChange: (Float) -> Unit,
-    onReferencePitchChange: (Int) -> Unit,
+    onMicSensitivityChangeFinished: () -> Unit,
+    onReferencePitchAdjust: (Int) -> Unit,
     onDarkThemeChange: (Boolean) -> Unit,
     onShowRealTimeHzChange: (Boolean) -> Unit,
     onNotationSystemChange: (NotationSystem) -> Unit,
+    saveError: Boolean,
+    onRetrySave: () -> Unit,
     onNavigate: (AppScreen) -> Unit
 ) {
 
     Scaffold(
         containerColor = SettingsBackground,
+        snackbarHost = {
+            if (saveError) {
+                Snackbar(
+                    modifier = Modifier.padding(16.dp),
+                    actionOnNewLine = true,
+                    action = {
+                        TextButton(onClick = onRetrySave) {
+                            Text(stringResource(R.string.retry_save))
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.settings_save_error))
+                }
+            }
+        },
 
         topBar = {
             TopAppBar(
@@ -102,6 +121,7 @@ fun SettingsScreen(
                     Slider(
                         value = settings.micSensitivity,
                         onValueChange = onMicSensitivityChange,
+                        onValueChangeFinished = onMicSensitivityChangeFinished,
                         modifier = Modifier.weight(1f),
                         colors = SliderDefaults.colors(
                             thumbColor = SettingsTeal,
@@ -204,9 +224,7 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(44.dp)
                             .clickable {
-                                if (settings.referencePitch > MIN_REFERENCE_PITCH) {
-                                    onReferencePitchChange(settings.referencePitch - 1)
-                                }
+                                onReferencePitchAdjust(-1)
                             },
                         shape = RoundedCornerShape(12.dp),
                         color = SettingsControl
@@ -238,9 +256,7 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(44.dp)
                             .clickable {
-                                if (settings.referencePitch < MAX_REFERENCE_PITCH) {
-                                    onReferencePitchChange(settings.referencePitch + 1)
-                                }
+                                onReferencePitchAdjust(1)
                             },
                         shape = RoundedCornerShape(12.dp),
                         color = SettingsControl

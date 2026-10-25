@@ -20,9 +20,11 @@ class MainActivity : ComponentActivity() {
         // The retained ViewModel's factory captures only the application context.
         val appContext = applicationContext
         TunerViewModel.Factory(
-            captureFactory = PitchCaptureFactory { threshold, reference, preset, onPitch, onState ->
-                GuitarPitchDetector(appContext, threshold, reference, onPitch, onState, preset)
-            },
+            captureFactory = QueuedPitchCaptureFactory(
+                PitchCaptureFactory { threshold, reference, preset, onPitch, onState ->
+                    GuitarPitchDetector(appContext, threshold, reference, onPitch, onState, preset)
+                }
+            ),
             nowMs = android.os.SystemClock::elapsedRealtime
         )
     }

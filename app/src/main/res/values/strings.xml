@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">eztunez</string>
     <string name="loading_settings">Loading settings…</string>
+    <string name="settings_save_error">Could not save your settings. Your choices are still active, but may be lost when the app closes.</string>
+    <string name="retry_save">Retry save</string>
     <string name="current_tuning">%1$s (%2$s)</string>
     <string name="tuning_mode_subtitle">%1$s · %2$s</string>
 </resources>

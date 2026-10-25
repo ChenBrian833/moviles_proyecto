@@ -19,6 +19,7 @@ private val Context.tunerSettingsDataStore by preferencesDataStore(name = "tuner
 
 interface SettingsRepository {
     val settings: Flow<TunerSettings>
+    suspend fun saveSettings(settings: TunerSettings)
     suspend fun setMicSensitivity(value: Float)
     suspend fun setReferencePitch(value: Int)
     suspend fun setShowRealTimeHz(value: Boolean)
@@ -36,6 +37,17 @@ class DataStoreSettingsRepository(
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }
         .map(::settingsFromPreferences)
+
+    override suspend fun saveSettings(settings: TunerSettings) {
+        val normalized = settings.normalized()
+        dataStore.edit {
+            it[Keys.MIC_SENSITIVITY] = normalized.micSensitivity
+            it[Keys.REFERENCE_PITCH] = normalized.referencePitch
+            it[Keys.SHOW_REAL_TIME_HZ] = normalized.showRealTimeHz
+            it[Keys.NOTATION_SYSTEM] = normalized.notationSystem.name
+            it[Keys.DARK_THEME] = normalized.darkTheme
+        }
+    }
 
     override suspend fun setMicSensitivity(value: Float) {
         dataStore.edit { it[Keys.MIC_SENSITIVITY] = normalizeSensitivity(value) }

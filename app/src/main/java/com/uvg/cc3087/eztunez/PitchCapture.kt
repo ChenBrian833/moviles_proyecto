@@ -1,6 +1,6 @@
 package com.uvg.cc3087.eztunez
 
-/** One microphone capture. Call start/stop from the owning UI thread. */
+/** One capture. UI callers use QueuedPitchCaptureFactory to dispatch blocking drivers. */
 interface PitchCapture {
     fun start()
     fun stop()
