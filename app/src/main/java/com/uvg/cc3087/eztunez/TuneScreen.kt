@@ -4,11 +4,11 @@ package com.uvg.cc3087.eztunez
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,7 +26,6 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 private val TuneBackground: Color @Composable get() = MaterialTheme.colorScheme.background
-private val TuneHeader: Color @Composable get() = MaterialTheme.colorScheme.surface
 private val TuneCard: Color @Composable get() = MaterialTheme.colorScheme.surface
 private val TuneControl: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
 private val TuneTeal: Color @Composable get() = MaterialTheme.colorScheme.primary
@@ -34,7 +33,7 @@ private val TuneText: Color @Composable get() = MaterialTheme.colorScheme.onBack
 private val TuneSecondaryText: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 private val TuneMeterInactive: Color @Composable get() = MaterialTheme.colorScheme.outlineVariant
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TuneScreen(
     mode: TuningMode = TuningMode.AUTO,
@@ -63,31 +62,12 @@ fun TuneScreen(
         containerColor = TuneBackground,
 
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-
-                        Text(
-                            text = "Acoustic",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = TuneText
-                        )
-
-                        Text(
-                            text = stringResource(
-                                R.string.tuning_mode_subtitle,
-                                preset.name,
-                                if (mode == TuningMode.AUTO) "Auto Tune" else "Manual Tune"
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TuneSecondaryText
-                        )
-                    }
-                },
-
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = TuneHeader
+            ScreenHeader(
+                title = "Acoustic",
+                subtitle = stringResource(
+                    R.string.tuning_mode_subtitle,
+                    preset.name,
+                    if (mode == TuningMode.AUTO) "Auto Tune" else "Manual Tune"
                 )
             )
         },
@@ -101,202 +81,213 @@ fun TuneScreen(
 
     ) { innerPadding ->
 
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
         ) {
-
-            Spacer(
-                modifier = Modifier.height(28.dp)
-            )
-
-            if (microphoneState != MicrophoneState.LISTENING) {
-                MicrophoneStatusCard(
-                    state = microphoneState,
-                    onRetry = onRetry,
-                    onOpenSettings = onOpenSettings
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            /*
-             * DETECTED NOTE
-             */
-
-            Text(
-                text = formatNote(selectedString.note, settings.notationSystem),
-                fontSize = 64.sp,
-                fontWeight = FontWeight.Bold,
-                color = TuneText
-            )
-
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
-
-            Text(
-                text = formatPitchDisplay(
-                    detectedPitch,
-                    settings.showRealTimeHz,
-                    settings.notationSystem
-                ),
-
-                style = MaterialTheme.typography.titleLarge,
-                color = TuneSecondaryText
-            )
-
-            Spacer(
-                modifier = Modifier.height(28.dp)
-            )
-
-            /*
-             * TUNING METER
-             */
-
-            TuningMeter(
-                centsOffset = centsOffset,
-                hasSignal = detectedPitch != null,
+            val meterHeight = minOf(180.dp, maxHeight * 0.65f)
+            Column(
                 modifier = Modifier
+                    .widthIn(max = 600.dp)
                     .fillMaxWidth()
-                    .height(180.dp)
-            )
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
 
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            /*
-             * STATUS
-             */
-
-            Text(
-                text = when {
-
-                    detectedPitch == null -> {
-                        "Play a string"
-                    }
-
-                    isInTune -> {
-                        "In Tune ✓"
-                    }
-
-                    centsOffset < 0 -> {
-                        "Tune Up"
-                    }
-
-                    else -> {
-                        "Tune Down"
-                    }
-                },
-
-                style = MaterialTheme.typography.headlineSmall,
-
-                fontWeight = FontWeight.Bold,
-
-                color = if (isInTune) {
-                    TuneTeal
-                } else {
-                    TuneText
-                }
-            )
-
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            Text(
-                text = if (detectedPitch != null) {
-                    "${formatNote(selectedString.note, settings.notationSystem)} offset: %.1f cents"
-                        .format(centsOffset)
-                } else {
-                    microphoneState.message()
-                },
-
-                style = MaterialTheme.typography.bodyLarge,
-                color = TuneSecondaryText
-            )
-
-            Spacer(
-                modifier = Modifier.height(32.dp)
-            )
-
-            /*
-             * STRING SELECTOR
-             */
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = TuneCard
-                )
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Column(
-                    modifier = Modifier.padding(
-                        horizontal = 12.dp,
-                        vertical = 16.dp
+                if (microphoneState != MicrophoneState.LISTENING) {
+                    MicrophoneStatusCard(
+                        state = microphoneState,
+                        onRetry = onRetry,
+                        onOpenSettings = onOpenSettings
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                /*
+                 * DETECTED NOTE
+                 */
+
+                Text(
+                    text = formatNote(selectedString.note, settings.notationSystem),
+                    fontSize = 64.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = TuneText
+                )
+
+                Spacer(
+                    modifier = Modifier.height(4.dp)
+                )
+
+                Text(
+                    text = formatPitchDisplay(
+                        detectedPitch,
+                        settings.showRealTimeHz,
+                        settings.notationSystem
+                    ),
+
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    color = TuneSecondaryText
+                )
+
+                Spacer(
+                    modifier = Modifier.height(28.dp)
+                )
+
+                /*
+                 * TUNING METER
+                 */
+
+                TuningMeter(
+                    centsOffset = centsOffset,
+                    hasSignal = detectedPitch != null,
+                    modifier = Modifier
+                        .widthIn(max = 480.dp)
+                        .fillMaxWidth()
+                        .height(meterHeight)
+                )
+
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+
+                /*
+                 * STATUS
+                 */
+
+                Text(
+                    text = when {
+
+                        detectedPitch == null -> {
+                            "Play a string"
+                        }
+
+                        isInTune -> {
+                            "In Tune ✓"
+                        }
+
+                        centsOffset < 0 -> {
+                            "Tune Up"
+                        }
+
+                        else -> {
+                            "Tune Down"
+                        }
+                    },
+
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center,
+
+                    fontWeight = FontWeight.Bold,
+
+                    color = if (isInTune) {
+                        TuneTeal
+                    } else {
+                        TuneText
+                    }
+                )
+
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+
+                Text(
+                    text = if (detectedPitch != null) {
+                        "${formatNote(selectedString.note, settings.notationSystem)} offset: %.1f cents"
+                            .format(centsOffset)
+                    } else {
+                        microphoneState.message()
+                    },
+
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = TuneSecondaryText
+                )
+
+                Spacer(
+                    modifier = Modifier.height(32.dp)
+                )
+
+                /*
+                 * STRING SELECTOR
+                 */
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = TuneCard
                     )
                 ) {
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                    Column(
+                        modifier = Modifier.padding(
+                            horizontal = 12.dp,
+                            vertical = 16.dp
+                        )
                     ) {
 
-                        guitarStrings.forEach { guitarString ->
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
 
-                            GuitarStringButton(
-                                note = formatNote(guitarString.note, settings.notationSystem),
-                                selected =
-                                    guitarString.id == selectedStringId,
-                                enabled = mode == TuningMode.MANUAL,
-                                onClick = {
-                                    onSelectString(guitarString.id)
-                                }
-                            )
+                            guitarStrings.forEach { guitarString ->
+
+                                GuitarStringButton(
+                                    note = formatNote(guitarString.note, settings.notationSystem),
+                                    selected =
+                                        guitarString.id == selectedStringId,
+                                    enabled = mode == TuningMode.MANUAL,
+                                    onClick = {
+                                        onSelectString(guitarString.id)
+                                    }
+                                )
+                            }
                         }
+
+                        Spacer(
+                            modifier = Modifier.height(20.dp)
+                        )
+
+                        /*
+                         * Confidence reported by Tarsos for the retained reading.
+                         */
+                        LinearProgressIndicator(
+                            progress = {
+                                detectionConfidence
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp),
+
+                            color = TuneTeal,
+                            trackColor = TuneControl
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
+
+                        Text(
+                            text = "${(detectionConfidence * 100).toInt()}%",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TuneSecondaryText
+                        )
                     }
-
-                    Spacer(
-                        modifier = Modifier.height(20.dp)
-                    )
-
-                    /*
-                     * Confidence reported by Tarsos for the retained reading.
-                     */
-                    LinearProgressIndicator(
-                        progress = {
-                            detectionConfidence
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp),
-
-                        color = TuneTeal,
-                        trackColor = TuneControl
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(8.dp)
-                    )
-
-                    Text(
-                        text = "${(detectionConfidence * 100).toInt()}%",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = TuneSecondaryText
-                    )
                 }
+
+
             }
-
-
         }
     }
 }
@@ -332,12 +323,10 @@ private fun GuitarStringButton(
 ) {
 
     Surface(
+        onClick = onClick,
+        enabled = enabled,
         modifier = Modifier
-            .size(48.dp)
-            .clickable(
-                enabled = enabled,
-                onClick = onClick
-            ),
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp),
 
         shape = CircleShape,
 
@@ -349,6 +338,7 @@ private fun GuitarStringButton(
     ) {
 
         Box(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
 
@@ -390,7 +380,13 @@ private fun TuningMeter(
         val centerX = size.width / 2f
         val centerY = size.height * 0.92f
 
-        val radius = size.width * 0.38f
+        // Keep the arc and its outer tick marks inside both canvas dimensions.
+        val tickMargin = 24.dp.toPx()
+        val radius = minOf(
+            size.width * 0.38f,
+            size.width / 2f - tickMargin,
+            centerY - tickMargin
+        ).coerceAtLeast(0f)
 
         /*
          * Main semicircle.

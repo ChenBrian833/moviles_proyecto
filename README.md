@@ -121,6 +121,14 @@ Los cambios pendientes se agrupan y guardan en orden mediante una edición atóm
 de DataStore, omitiendo valores sin cambios. Si falla una escritura, Settings
 muestra un error persistente con reintento; las opciones siguen activas en la sesión.
 
+Home y Tune usan contenido desplazable con ancho máximo centrado. Sus encabezados,
+tarjetas y controles crecen con el texto; las cuerdas se distribuyen en varias filas
+cuando no caben y el medidor respeta tanto su ancho como su altura.
+La navegación compartida muestra solo iconos si las etiquetas no caben con el
+tamaño de texto elegido, conservando sus nombres accesibles. Las pruebas
+`ResponsiveScreensTest` comprueban ventanas de 800×360 y 280×360 dp, además de
+320×480 dp con texto al 200 %, sin modificar la configuración del teléfono.
+
 Las pruebas de ViewModels usan una captura falsa y un reloj controlado para
 verificar selección manual/automática, cambios de sensibilidad y A4, reintentos,
 callbacks tardíos, liberación de recursos y filtros de presets. Ejecutar:
