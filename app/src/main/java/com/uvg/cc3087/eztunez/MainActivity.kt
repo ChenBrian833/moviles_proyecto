@@ -2,16 +2,35 @@ package com.uvg.cc3087.eztunez
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.uvg.cc3087.eztunez.ui.theme.EztunezTheme
-import kotlinx.coroutines.delay
-import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
 class MainActivity : ComponentActivity() {
+    private val settingsViewModel: SettingsViewModel by viewModels {
+        SettingsViewModel.Factory(DataStoreSettingsRepository(applicationContext))
+    }
+    private val tunerViewModel: TunerViewModel by viewModels {
+        // The retained ViewModel's factory captures only the application context.
+        val appContext = applicationContext
+        TunerViewModel.Factory(
+            captureFactory = QueuedPitchCaptureFactory(
+                PitchCaptureFactory { threshold, reference, preset, onPitch, onState ->
+                    GuitarPitchDetector(appContext, threshold, reference, onPitch, onState, preset)
+                }
+            ),
+            nowMs = android.os.SystemClock::elapsedRealtime
+        )
+    }
+    private val presetsViewModel: TuningPresetsViewModel by viewModels {
+        TuningPresetsViewModel.Factory(BuiltInTuningPresetRepository())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,81 +50,78 @@ class MainActivity : ComponentActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         setContent {
+            val settings = settingsViewModel.settings.collectAsStateWithLifecycle().value
             EztunezTheme(
-                darkTheme = true,
+                darkTheme = settings?.darkTheme ?: true,
                 dynamicColor = false
             ) {
-                App()
+                if (settings == null) {
+                    LoadingScreen()
+                } else {
+                    App(
+                        settings = settings,
+                        settingsViewModel = settingsViewModel,
+                        tunerViewModel = tunerViewModel,
+                        presetsViewModel = presetsViewModel
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun App() {
+fun App(
+    settings: TunerSettings,
+    settingsViewModel: SettingsViewModel,
+    tunerViewModel: TunerViewModel,
+    presetsViewModel: TuningPresetsViewModel
+) {
+    val presetsState by presetsViewModel.uiState.collectAsStateWithLifecycle()
+    val selectedPreset = presetsState.selectedPreset
 
-    var showLoadingScreen by remember {
-        mutableStateOf(true)
-    }
-
-    var currentScreen by remember {
+    var currentScreen by rememberSaveable {
         mutableStateOf(AppScreen.HOME)
     }
+    var tuningMode by rememberSaveable { mutableStateOf(TuningMode.AUTO) }
 
-    var tuningMode by remember { mutableStateOf(TuningMode.AUTO) }
-
-    LaunchedEffect(Unit) {
-        delay(1500)
-        showLoadingScreen = false
-    }
-
-    if (showLoadingScreen) {
-
-        LoadingScreen()
-
-    } else {
-
-        when (currentScreen) {
-
-            AppScreen.PRESETS -> {
-                TuningPresetsScreen(
-                    onNavigate = {
-                        currentScreen = it
-                    }
-                )
+    val navigateTo: (AppScreen) -> Unit = { destination ->
+        if (destination != currentScreen) {
+            // Ending a screen visit is different from recreating its UI on rotation.
+            when (currentScreen) {
+                AppScreen.TUNE -> tunerViewModel.endSession()
+                AppScreen.PRESETS -> presetsViewModel.endSession()
+                else -> Unit
             }
-
-            AppScreen.SETTINGS -> {
-                SettingsScreen(
-                    onNavigate = {
-                        currentScreen = it
-                    }
-                )
-            }
-
-
-            AppScreen.HOME -> {
-                HomeScreen(
-                    onNavigate = {
-                        currentScreen = it
-                    },
-                    onStartTuning = { mode ->
-                        tuningMode = mode
-                        currentScreen = AppScreen.TUNE
-                    }
-                )
-            }
-
-            AppScreen.TUNE -> {
-                TuneScreen(
-                    mode = tuningMode,
-                    onNavigate = {
-                        currentScreen = it
-                    }
-                )
-            }
+            currentScreen = destination
         }
     }
-}
 
-//
+    when (currentScreen) {
+        AppScreen.PRESETS -> TuningPresetsRoute(
+            viewModel = presetsViewModel,
+            onNavigate = navigateTo
+        )
+        AppScreen.SETTINGS -> SettingsRoute(
+            viewModel = settingsViewModel,
+            settings = settings,
+            onNavigate = navigateTo
+        )
+        AppScreen.HOME -> HomeScreen(
+            preset = selectedPreset,
+            notationSystem = settings.notationSystem,
+            onNavigate = navigateTo,
+            onStartTuning = { mode ->
+                tuningMode = mode
+                navigateTo(AppScreen.TUNE)
+            }
+        )
+        AppScreen.TUNE -> TunerRoute(
+            viewModel = tunerViewModel,
+            preset = selectedPreset,
+            mode = tuningMode,
+            settings = settings,
+            onNavigate = navigateTo
+        )
+    }
+}

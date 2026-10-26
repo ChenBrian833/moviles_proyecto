@@ -10,67 +10,58 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
-private val SettingsBackground = Color(0xFF0D0D0F)
-private val SettingsHeader = Color(0xFF1B191E)
-private val SettingsCard = Color(0xFF242328)
-private val SettingsControl = Color(0xFF302E36)
-private val SettingsTeal = Color(0xFF50D0C8)
-private val SettingsPrimaryText = Color(0xFFF4F1F5)
-private val SettingsSecondaryText = Color(0xFF99959E)
-private val SettingsDivider = Color(0xFF464149)
-
-enum class DetectionAlgorithm {
-    AUTO,
-    FFT
-}
-
-enum class NotationSystem {
-    STANDARD,
-    SOLFEGE
-}
+private val SettingsBackground: Color @Composable get() = MaterialTheme.colorScheme.background
+private val SettingsHeader: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val SettingsCard: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val SettingsControl: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val SettingsTeal: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val SettingsPrimaryText: Color @Composable get() = MaterialTheme.colorScheme.onBackground
+private val SettingsSecondaryText: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val SettingsDivider: Color @Composable get() = MaterialTheme.colorScheme.outlineVariant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    settings: TunerSettings,
+    onMicSensitivityChange: (Float) -> Unit,
+    onMicSensitivityChangeFinished: () -> Unit,
+    onReferencePitchAdjust: (Int) -> Unit,
+    onDarkThemeChange: (Boolean) -> Unit,
+    onShowRealTimeHzChange: (Boolean) -> Unit,
+    onNotationSystemChange: (NotationSystem) -> Unit,
+    saveError: Boolean,
+    onRetrySave: () -> Unit,
     onNavigate: (AppScreen) -> Unit
 ) {
 
-    var micSensitivity by remember {
-        mutableFloatStateOf(0.78f)
-    }
-
-    var detectionAlgorithm by remember {
-        mutableStateOf(DetectionAlgorithm.AUTO)
-    }
-
-    var referencePitch by remember {
-        mutableIntStateOf(440)
-    }
-
-    var darkTheme by remember {
-        mutableStateOf(true)
-    }
-
-    var showRealTimeHz by remember {
-        mutableStateOf(true)
-    }
-
-    var notationSystem by remember {
-        mutableStateOf(NotationSystem.STANDARD)
-    }
-
     Scaffold(
         containerColor = SettingsBackground,
+        snackbarHost = {
+            if (saveError) {
+                Snackbar(
+                    modifier = Modifier.padding(16.dp),
+                    actionOnNewLine = true,
+                    action = {
+                        TextButton(onClick = onRetrySave) {
+                            Text(stringResource(R.string.retry_save))
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.settings_save_error))
+                }
+            }
+        },
 
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Settings",
+                        text = stringResource(R.string.nav_settings),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = SettingsPrimaryText
@@ -108,11 +99,11 @@ fun SettingsScreen(
 
 
             SettingsSectionCard(
-                title = "Audio & Sensitivity"
+                title = stringResource(R.string.settings_audio)
             ) {
 
                 Text(
-                    text = "Mic Sensitivity",
+                    text = stringResource(R.string.mic_sensitivity),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = SettingsPrimaryText
@@ -128,10 +119,9 @@ fun SettingsScreen(
                 ) {
 
                     Slider(
-                        value = micSensitivity,
-                        onValueChange = {
-                            micSensitivity = it
-                        },
+                        value = settings.micSensitivity,
+                        onValueChange = onMicSensitivityChange,
+                        onValueChangeFinished = onMicSensitivityChangeFinished,
                         modifier = Modifier.weight(1f),
                         colors = SliderDefaults.colors(
                             thumbColor = SettingsTeal,
@@ -145,7 +135,7 @@ fun SettingsScreen(
                     )
 
                     Text(
-                        text = "${(micSensitivity * 100).roundToInt()}%",
+                        text = stringResource(R.string.percent_value, (settings.micSensitivity * 100).roundToInt()),
                         style = MaterialTheme.typography.bodyLarge,
                         color = SettingsSecondaryText
                     )
@@ -156,7 +146,7 @@ fun SettingsScreen(
                 )
 
                 Text(
-                    text = "Detection Algorithm",
+                    text = stringResource(R.string.detection_algorithm),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = SettingsPrimaryText
@@ -174,24 +164,21 @@ fun SettingsScreen(
                 ) {
 
                     SettingsChoiceButton(
-                        text = "Auto-detect",
-                        selected =
-                            detectionAlgorithm == DetectionAlgorithm.AUTO,
+                        text = stringResource(R.string.auto_detect),
+                        selected = true,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            detectionAlgorithm =
-                                DetectionAlgorithm.AUTO
+                            // YIN is the only documented and implemented detector.
                         }
                     )
 
                     SettingsChoiceButton(
-                        text = "Advanced FFT",
-                        selected =
-                            detectionAlgorithm == DetectionAlgorithm.FFT,
+                        text = stringResource(R.string.advanced_fft_soon),
+                        selected = false,
+                        enabled = false,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            detectionAlgorithm =
-                                DetectionAlgorithm.FFT
+                            // Intentionally disabled until an FFT detector is implemented and tested.
                         }
                     )
                 }
@@ -205,7 +192,7 @@ fun SettingsScreen(
 
 
                 Text(
-                    text = "Reference Pitch A4",
+                    text = stringResource(R.string.reference_pitch),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = SettingsPrimaryText
@@ -216,7 +203,7 @@ fun SettingsScreen(
                 )
 
                 Text(
-                    text = "Default concert pitch",
+                    text = stringResource(R.string.default_concert_pitch),
                     style = MaterialTheme.typography.bodyMedium,
                     color = SettingsSecondaryText
                 )
@@ -237,9 +224,7 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(44.dp)
                             .clickable {
-                                if (referencePitch > 400) {
-                                    referencePitch--
-                                }
+                                onReferencePitchAdjust(-1)
                             },
                         shape = RoundedCornerShape(12.dp),
                         color = SettingsControl
@@ -249,7 +234,7 @@ fun SettingsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "−",
+                                text = stringResource(R.string.symbol_minus),
                                 style = MaterialTheme.typography.titleLarge,
                                 color = SettingsPrimaryText
                             )
@@ -257,7 +242,7 @@ fun SettingsScreen(
                     }
 
                     Text(
-                        text = "$referencePitch Hz",
+                        text = stringResource(R.string.frequency_hz, settings.referencePitch),
                         modifier = Modifier.padding(
                             horizontal = 16.dp
                         ),
@@ -271,9 +256,7 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(44.dp)
                             .clickable {
-                                if (referencePitch < 480) {
-                                    referencePitch++
-                                }
+                                onReferencePitchAdjust(1)
                             },
                         shape = RoundedCornerShape(12.dp),
                         color = SettingsControl
@@ -283,7 +266,7 @@ fun SettingsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "+",
+                                text = stringResource(R.string.symbol_plus),
                                 style = MaterialTheme.typography.titleLarge,
                                 color = SettingsPrimaryText
                             )
@@ -297,15 +280,13 @@ fun SettingsScreen(
 
 
             SettingsSectionCard(
-                title = "Display Options"
+                title = stringResource(R.string.display_options)
             ) {
 
                 SettingsSwitchRow(
-                    title = "Dark Theme Mode",
-                    checked = darkTheme,
-                    onCheckedChange = {
-                        darkTheme = it
-                    }
+                    title = stringResource(R.string.dark_theme),
+                    checked = settings.darkTheme,
+                    onCheckedChange = onDarkThemeChange
                 )
 
                 Spacer(
@@ -321,11 +302,9 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Show Real-time Hz",
-                    checked = showRealTimeHz,
-                    onCheckedChange = {
-                        showRealTimeHz = it
-                    }
+                    title = stringResource(R.string.show_realtime_hz),
+                    checked = settings.showRealTimeHz,
+                    onCheckedChange = onShowRealTimeHzChange
                 )
 
                 Spacer(
@@ -333,7 +312,7 @@ fun SettingsScreen(
                 )
 
                 Text(
-                    text = "Notation System",
+                    text = stringResource(R.string.notation_system),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = SettingsPrimaryText
@@ -351,24 +330,22 @@ fun SettingsScreen(
                 ) {
 
                     SettingsChoiceButton(
-                        text = "Standard (C-D-E)",
+                        text = stringResource(R.string.notation_standard),
                         selected =
-                            notationSystem == NotationSystem.STANDARD,
+                            settings.notationSystem == NotationSystem.STANDARD,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            notationSystem =
-                                NotationSystem.STANDARD
+                            onNotationSystemChange(NotationSystem.STANDARD)
                         }
                     )
 
                     SettingsChoiceButton(
-                        text = "Solfège (Do-Re-Mi)",
+                        text = stringResource(R.string.notation_solfege),
                         selected =
-                            notationSystem == NotationSystem.SOLFEGE,
+                            settings.notationSystem == NotationSystem.SOLFEGE,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            notationSystem =
-                                NotationSystem.SOLFEGE
+                            onNotationSystemChange(NotationSystem.SOLFEGE)
                         }
                     )
                 }
@@ -393,8 +370,8 @@ fun SettingsScreen(
                 ) {
 
                     SettingsInfoRow(
-                        title = "App Version",
-                        trailingText = "v1.0 (Pro)"
+                        title = stringResource(R.string.app_version),
+                        trailingText = stringResource(R.string.app_version_value)
                     )
 
                     HorizontalDivider(
@@ -402,8 +379,8 @@ fun SettingsScreen(
                     )
 
                     SettingsInfoRow(
-                        title = "Rate TunePro App",
-                        trailingText = "›",
+                        title = stringResource(R.string.rate_app, stringResource(R.string.app_name)),
+                        trailingText = stringResource(R.string.symbol_chevron),
                         onClick = {
 
                         }
@@ -414,8 +391,8 @@ fun SettingsScreen(
                     )
 
                     SettingsInfoRow(
-                        title = "Send Support Feedback",
-                        trailingText = "›",
+                        title = stringResource(R.string.support_feedback),
+                        trailingText = stringResource(R.string.symbol_chevron),
                         onClick = {
 
                         }
@@ -482,6 +459,7 @@ private fun SettingsSectionCard(
 private fun SettingsChoiceButton(
     text: String,
     selected: Boolean,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
@@ -490,6 +468,7 @@ private fun SettingsChoiceButton(
         modifier = modifier
             .fillMaxHeight()
             .clickable(
+                enabled = enabled,
                 onClick = onClick
             ),
 

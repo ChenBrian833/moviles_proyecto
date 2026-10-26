@@ -3,30 +3,33 @@ package com.uvg.cc3087.eztunez
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
-private val HomeBackground = Color(0xFF0D0D0F)
-private val HomeHeader = Color(0xFF1B191E)
-private val HomeCard = Color(0xFF242328)
-private val HomeIconBox = Color(0xFF2C2A32)
-private val HomeTeal = Color(0xFF50D0C8)
-private val HomeSelected = Color(0xFF006B63)
-private val HomeText = Color(0xFFF4F1F5)
-private val HomeSecondary = Color(0xFF99959E)
+private val HomeBackground: Color @Composable get() = MaterialTheme.colorScheme.background
+private val HomeCard: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val HomeIconBox: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val HomeTeal: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val HomeSelected: Color @Composable get() = MaterialTheme.colorScheme.primaryContainer
+private val HomeText: Color @Composable get() = MaterialTheme.colorScheme.onBackground
+private val HomeSecondary: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    preset: TuningPreset = BuiltInTuningPresets.standard,
+    notationSystem: NotationSystem = NotationSystem.STANDARD,
     onNavigate: (AppScreen) -> Unit,
     onStartTuning: (TuningMode) -> Unit
 ) {
@@ -35,6 +38,9 @@ fun HomeScreen(
         SnackbarHostState()
     }
 
+    val changeInstrumentMessage = stringResource(R.string.change_instrument)
+    val chromaticMessage = stringResource(R.string.chromatic_coming_soon)
+    val metronomeMessage = stringResource(R.string.metronome_coming_soon)
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -47,29 +53,15 @@ fun HomeScreen(
         },
 
         topBar = {
-            TopAppBar(
-                title = {
+            ScreenHeader(
+                title = stringResource(R.string.app_name),
+                trailingContent = {
                     Text(
-                        text = "EzTunez",
+                        text = stringResource(R.string.symbol_music),
                         color = HomeText,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
+                        fontSize = 24.sp
                     )
-                },
-
-                actions = {
-
-                    Text(
-                        text = "♬",
-                        color = HomeText,
-                        fontSize = 24.sp,
-                        modifier = Modifier.padding(end = 20.dp)
-                    )
-                },
-
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = HomeHeader
-                )
+                }
             )
         },
 
@@ -82,220 +74,241 @@ fun HomeScreen(
 
     ) { innerPadding ->
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 12.dp)
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
         ) {
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            // instriment card
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = HomeCard
-                )
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 720.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp)
+                    .padding(bottom = 16.dp)
             ) {
 
-                Column(
-                    modifier = Modifier.padding(16.dp)
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
+
+                // instriment card
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = HomeCard
+                    )
                 ) {
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
 
-
-                        Surface(
-                            modifier = Modifier.size(48.dp),
-                            shape = CircleShape,
-                            color = HomeIconBox
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
 
-                            Box(
-                                contentAlignment = Alignment.Center
+
+                            Surface(
+                                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+                                shape = CircleShape,
+                                color = HomeIconBox
                             ) {
 
+                                Box(
+                                    contentAlignment = Alignment.Center
+                                ) {
+
+                                    Text(
+                                        text = stringResource(R.string.symbol_music),
+                                        color = HomeTeal,
+                                        fontSize = 24.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(
+                                modifier = Modifier.width(12.dp)
+                            )
+
+                            Column(modifier = Modifier.weight(1f)) {
+
                                 Text(
-                                    text = "♬",
-                                    color = HomeTeal,
-                                    fontSize = 24.sp
+                                    text = stringResource(R.string.instrument_acoustic_guitar),
+                                    color = HomeText,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Spacer(
+                                    modifier = Modifier.height(2.dp)
+                                )
+
+                                Text(
+                                    text = stringResource(
+                                        R.string.current_tuning,
+                                        preset.localizedName(),
+                                        preset.midiNotes.joinToString(" ") {
+                                            formatNote(
+                                                noteNameForMidi(it, preset.preferFlats, includeOctave = false),
+                                                notationSystem
+                                            )
+                                        }
+                                    ),
+                                    color = HomeSecondary,
+                                    fontSize = 12.sp
                                 )
                             }
                         }
 
                         Spacer(
-                            modifier = Modifier.width(12.dp)
+                            modifier = Modifier.height(16.dp)
                         )
 
-                        Column {
+                        // change instruments
+
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = changeInstrumentMessage,
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            },
+
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp),
+
+                            shape = RoundedCornerShape(24.dp),
+
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = HomeTeal
+                            ),
+
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = HomeTeal
+                            ),
+
+                            contentPadding = PaddingValues(
+                                horizontal = 12.dp,
+                                vertical = 8.dp
+                            )
+                        ) {
 
                             Text(
-                                text = "Acoustic Guitar",
-                                color = HomeText,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
+                                text = stringResource(R.string.symbol_instrument),
+                                color = HomeTeal,
+                                fontSize = 16.sp
                             )
 
                             Spacer(
-                                modifier = Modifier.height(2.dp)
+                                modifier = Modifier.width(8.dp)
                             )
 
                             Text(
-                                text = "Standard Tuning (E A D G B E)",
-                                color = HomeSecondary,
-                                fontSize = 12.sp
+                                text = stringResource(R.string.change_instrument),
+                                modifier = Modifier.weight(1f),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
-
-                    Spacer(
-                        modifier = Modifier.height(16.dp)
-                    )
-
-                    // change instruments
-
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = "Change Instrument",
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
-                        },
-
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp),
-
-                        shape = RoundedCornerShape(24.dp),
-
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = HomeTeal
-                        ),
-
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = HomeTeal
-                        ),
-
-                        contentPadding = PaddingValues(
-                            horizontal = 12.dp
-                        )
-                    ) {
-
-                        Text(
-                            text = "▣",
-                            color = HomeTeal,
-                            fontSize = 16.sp
-                        )
-
-                        Spacer(
-                            modifier = Modifier.width(8.dp)
-                        )
-
-                        Text(
-                            text = "Change Instrument",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
                 }
+
+                // tuning modes title
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
+
+                Text(
+                    text = stringResource(R.string.tuning_modes),
+                    color = HomeSecondary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
+
+                // Auto tune
+
+                HomeModeCard(
+                    title = stringResource(R.string.mode_auto),
+                    description = stringResource(R.string.mode_auto_description),
+                    symbol = stringResource(R.string.symbol_auto),
+                    selected = true,
+                    onClick = {
+                        onStartTuning(TuningMode.AUTO)
+                    }
+                )
+
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                //manual
+
+                HomeModeCard(
+                    title = stringResource(R.string.mode_manual),
+                    description = stringResource(R.string.mode_manual_description),
+                    symbol = stringResource(R.string.symbol_manual),
+                    onClick = {
+                        onStartTuning(TuningMode.MANUAL)
+                    }
+                )
+
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                //chromatic
+
+                HomeModeCard(
+                    title = stringResource(R.string.mode_chromatic),
+                    description = stringResource(R.string.mode_chromatic_description),
+                    symbol = stringResource(R.string.symbol_chromatic),
+                    onClick = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = chromaticMessage,
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    }
+                )
+
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                /*
+                 * ============================
+                 * METRONOME
+                 * ============================
+                 */
+
+                HomeModeCard(
+                    title = stringResource(R.string.metronome),
+                    description = stringResource(R.string.metronome_description),
+                    symbol = stringResource(R.string.symbol_auto),
+                    onClick = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = metronomeMessage,
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    }
+                )
             }
-
-            // tuning modes title
-            Spacer(
-                modifier = Modifier.height(20.dp)
-            )
-
-            Text(
-                text = "TUNING MODES",
-                color = HomeSecondary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            // Auto tune
-
-            HomeModeCard(
-                title = "Auto Tune",
-                description = "Hands-free automatic string detection",
-                symbol = "♩",
-                selected = true,
-                onClick = {
-                    onStartTuning(TuningMode.AUTO)
-                }
-            )
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            //manual
-
-            HomeModeCard(
-                title = "Manual Tune",
-                description = "Select and tune strings individually",
-                symbol = "〰",
-                onClick = {
-                    onStartTuning(TuningMode.MANUAL)
-                }
-            )
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            //chromatic
-
-            HomeModeCard(
-                title = "Chromatic Tuner",
-                description = "Tune to any of the 12 chromatic pitches",
-                symbol = "♪",
-                onClick = {
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Chromatic Tuner coming soon",
-                            duration = SnackbarDuration.Short
-                        )
-                    }
-                }
-            )
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            /*
-             * ============================
-             * METRONOME
-             * ============================
-             */
-
-            HomeModeCard(
-                title = "Metronome",
-                description = "Keep rhythm with visual and audio beats",
-                symbol = "♩",
-                onClick = {
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Metronome coming soon",
-                            duration = SnackbarDuration.Short
-                        )
-                    }
-                }
-            )
         }
     }
 }
@@ -315,7 +328,7 @@ private fun HomeModeCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(68.dp)
+            .heightIn(min = 68.dp)
             .clickable(
                 onClick = onClick
             ),
@@ -333,9 +346,10 @@ private fun HomeModeCard(
 
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(
-                    horizontal = 16.dp
+                    horizontal = 16.dp,
+                    vertical = 12.dp
                 ),
 
             verticalAlignment = Alignment.CenterVertically
@@ -346,7 +360,7 @@ private fun HomeModeCard(
              */
 
             Surface(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.sizeIn(minWidth = 40.dp, minHeight = 40.dp),
 
                 shape = RoundedCornerShape(12.dp),
 
@@ -408,8 +422,7 @@ private fun HomeModeCard(
                         HomeSecondary
                     },
 
-                    fontSize = 12.sp,
-                    maxLines = 1
+                    fontSize = 12.sp
                 )
             }
 
@@ -418,7 +431,7 @@ private fun HomeModeCard(
              */
 
             Text(
-                text = "›",
+                text = stringResource(R.string.symbol_chevron),
 
                 color = if (selected) {
                     HomeText

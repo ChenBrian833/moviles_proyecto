@@ -1,14 +1,15 @@
 package com.uvg.cc3087.eztunez
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 
 enum class AppScreen {
     HOME,
@@ -23,8 +24,11 @@ fun EzTunezNavigationBar(
     onNavigate: (AppScreen) -> Unit
 ) {
 
+    // Configuration width follows rotation and multi-window resizing. Keep icon
+    // names available to accessibility when scaled labels would be too narrow.
+    val showLabels = LocalConfiguration.current.screenWidthDp >= 256 * LocalDensity.current.fontScale
     NavigationBar(
-        containerColor = Color(0xFF1B191E)
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
 
         NavigationBarItem(
@@ -35,16 +39,14 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.Home,
-                    contentDescription = "Tune"
+                    contentDescription = stringResource(R.string.nav_home)
                 )
             },
 
 
 
 
-            label = {
-                Text("Home")
-            },
+            label = if (showLabels) { { Text(stringResource(R.string.nav_home)) } } else null,
             colors = navigationColors()
         )
 
@@ -56,12 +58,10 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Tune"
+                    contentDescription = stringResource(R.string.nav_tune)
                 )
             },
-            label = {
-                Text("Tune")
-            },
+            label = if (showLabels) { { Text(stringResource(R.string.nav_tune)) } } else null,
             colors = navigationColors()
         )
 
@@ -72,13 +72,11 @@ fun EzTunezNavigationBar(
             },
             icon = {
                 Icon(
-                    imageVector = Icons.Default.List,
-                    contentDescription = "Presets"
+                    imageVector = Icons.AutoMirrored.Filled.List,
+                    contentDescription = stringResource(R.string.nav_presets)
                 )
             },
-            label = {
-                Text("Presets")
-            },
+            label = if (showLabels) { { Text(stringResource(R.string.nav_presets)) } } else null,
             colors = navigationColors()
         )
 
@@ -90,12 +88,10 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings"
+                    contentDescription = stringResource(R.string.nav_settings)
                 )
             },
-            label = {
-                Text("Settings")
-            },
+            label = if (showLabels) { { Text(stringResource(R.string.nav_settings)) } } else null,
             colors = navigationColors()
         )
     }
@@ -104,11 +100,10 @@ fun EzTunezNavigationBar(
 @Composable
 private fun navigationColors(): NavigationBarItemColors {
     return NavigationBarItemDefaults.colors(
-        selectedIconColor = Color(0xFF50D0C8),
-        selectedTextColor = Color(0xFF50D0C8),
-        indicatorColor = Color(0xFF006B63),
-        unselectedIconColor = Color(0xFF99959E),
-        unselectedTextColor = Color(0xFF99959E)
+        selectedIconColor = MaterialTheme.colorScheme.primary,
+        selectedTextColor = MaterialTheme.colorScheme.primary,
+        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
-//
