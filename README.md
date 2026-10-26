@@ -75,6 +75,27 @@ La compilación automatizada no sustituye esta verificación acústica en hardwa
 
 ## Arquitectura
 
+La app sigue MVVM: la UI envía acciones a los ViewModels y observa su estado
+mediante `StateFlow`. Los ajustes y presets usan repositorios; el afinador usa
+una interfaz de captura de audio y un tracker para procesar las lecturas.
+
+```mermaid
+flowchart TD
+    UI["UI: pantallas Compose y Routes"] -->|acciones| VM["ViewModels: Settings, TuningPresets y Tuner"]
+    VM -->|"estado por StateFlow"| UI
+    VM --> SettingsRepo["SettingsRepository"]
+    SettingsRepo --> DataStore["Preferences DataStore: ajustes persistentes"]
+    VM --> PresetRepo["TuningPresetRepository"]
+    PresetRepo --> Catalog["Catálogo local de presets"]
+    VM --> Capture["PitchCapture: inicio y parada en cola de trabajo"]
+    Capture --> Detector["GuitarPitchDetector: AudioRecord + TarsosDSP YIN"]
+    Detector -->|"lecturas y estado del micrófono"| VM
+    VM --> Tracker["TuningTracker: selección de cuerda y suavizado"]
+```
+
+`MainActivity` crea y conecta estas dependencias. Las Routes gestionan la conexión
+con Android; `TunerRoute` controla permisos y el ciclo de vida del micrófono.
+
 - `MainActivity` crea los ViewModels con factories e inyección manual. La captura
   utiliza el contexto de aplicación; el ViewModel no conserva una Activity.
 - `TunerRoute` conecta permisos, ajustes de Android y duración de la pantalla con
