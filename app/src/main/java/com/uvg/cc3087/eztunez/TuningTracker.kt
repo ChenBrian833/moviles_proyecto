@@ -19,6 +19,11 @@ val standardGuitarStrings = listOf(
     GuitarString(6, "E4", 329.62756f)
 )
 
+fun guitarStringsForReference(referencePitch: Int): List<GuitarString> {
+    val scale = normalizeReferencePitch(referencePitch) / 440f
+    return standardGuitarStrings.map { it.copy(frequency = it.frequency * scale) }
+}
+
 data class DetectedPitch(
     val frequency: Float,
     val note: String,
@@ -29,8 +34,13 @@ data class DetectedPitch(
 internal fun centsFrom(frequency: Float, reference: Float): Float =
     (1200.0 * ln(frequency.toDouble() / reference) / ln(2.0)).toFloat()
 
-internal fun convertFrequency(frequency: Float, probability: Float): DetectedPitch {
-    val exactMidi = 69.0 + 12.0 * ln(frequency / 440.0) / ln(2.0)
+internal fun convertFrequency(
+    frequency: Float,
+    probability: Float,
+    referencePitch: Int = DEFAULT_REFERENCE_PITCH
+): DetectedPitch {
+    val reference = normalizeReferencePitch(referencePitch).toDouble()
+    val exactMidi = 69.0 + 12.0 * ln(frequency / reference) / ln(2.0)
     val nearestMidi = exactMidi.roundToInt()
     val names = arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
     return DetectedPitch(
@@ -50,8 +60,14 @@ data class TuningState(
 }
 
 /** Filters Tarsos readings only; Tarsos YIN remains the sole pitch detector. */
-class TuningTracker(private val mode: TuningMode) {
-    var state = TuningState()
+class TuningTracker(
+    private val mode: TuningMode,
+    referencePitch: Int = DEFAULT_REFERENCE_PITCH
+) {
+    private val referencePitch = normalizeReferencePitch(referencePitch)
+    private val guitarStrings = guitarStringsForReference(this.referencePitch)
+
+    var state = TuningState(selectedString = guitarStrings.first())
         private set
 
     private val recentPitches = ArrayDeque<Float>()
@@ -65,7 +81,7 @@ class TuningTracker(private val mode: TuningMode) {
 
     fun selectString(id: Int): TuningState {
         if (mode != TuningMode.MANUAL) return state
-        val target = standardGuitarStrings.first { it.id == id }
+        val target = guitarStrings.first { it.id == id }
         clearTracking()
         state = TuningState(selectedString = target)
         return state
@@ -94,7 +110,7 @@ class TuningTracker(private val mode: TuningMode) {
         }
 
         // Filter in cents, so smoothing has the same response on all six strings.
-        val raw = centsFrom(pitch.frequency, 440f)
+        val raw = centsFrom(pitch.frequency, referencePitch.toFloat())
         val previous = smoothedPitch
         var confirmedJump = false
         if (previous == null || abs(raw - previous) > 80f) {
@@ -123,11 +139,11 @@ class TuningTracker(private val mode: TuningMode) {
         val smooth = smoothedPitch?.let { it + 0.35f * (median - it) } ?: median
         smoothedPitch = smooth
         lastAcceptedAt = nowMs
-        val frequency = (440.0 * 2.0.pow(smooth / 1200.0)).toFloat()
+        val frequency = (referencePitch * 2.0.pow(smooth / 1200.0)).toFloat()
 
         var target = state.selectedString
         if (mode == TuningMode.AUTO) {
-            val nearest = standardGuitarStrings.minByOrNull {
+            val nearest = guitarStrings.minByOrNull {
                 abs(centsFrom(frequency, it.frequency))
             }!!
             val improvement = abs(centsFrom(frequency, target.frequency)) -
@@ -149,7 +165,7 @@ class TuningTracker(private val mode: TuningMode) {
 
         state = TuningState(
             selectedString = target,
-            pitch = convertFrequency(frequency, pitch.probability),
+            pitch = convertFrequency(frequency, pitch.probability, referencePitch),
             // Always compare to the target string, not to the nearest chromatic note.
             cents = centsFrom(frequency, target.frequency)
         )

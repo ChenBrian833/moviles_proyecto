@@ -6,8 +6,8 @@ import kotlin.math.abs
 import kotlin.math.pow
 
 class TuningTrackerTest {
-    private class Session(mode: TuningMode) {
-        val tracker = TuningTracker(mode)
+    private class Session(mode: TuningMode, referencePitch: Int = 440) {
+        val tracker = TuningTracker(mode, referencePitch)
         var time = 0L
         fun play(frequency: Float, frames: Int = 6): TuningState {
             repeat(frames) {
@@ -161,5 +161,28 @@ class TuningTrackerTest {
         for (time in listOf(0L, 300L, 600L)) {
             assertNull(tracker.update(quietG, time).pitch)
         }
+    }
+
+    @Test fun alternateReferenceScalesAllTargetsAndCents() {
+        val reference = 432
+        val targets = guitarStringsForReference(reference)
+        standardGuitarStrings.zip(targets).forEach { (standard, shifted) ->
+            assertEquals(standard.frequency * reference / 440f, shifted.frequency, 0.0001f)
+        }
+
+        val session = Session(TuningMode.MANUAL, reference)
+        session.tracker.selectString(2)
+        val state = session.play(targets[1].frequency)
+        assertEquals("A2", state.pitch?.note)
+        assertEquals(0f, state.cents, 0.02f)
+        assertTrue(state.isInTune)
+    }
+
+    @Test fun configuredReferenceChangesCentsInsteadOfOnlyTheLabel() {
+        val session = Session(TuningMode.MANUAL, 432)
+        session.tracker.selectString(2)
+        val state = session.play(110f)
+        assertEquals(centsFrom(110f, 108f), state.cents, 0.02f)
+        assertFalse(state.isInTune)
     }
 }

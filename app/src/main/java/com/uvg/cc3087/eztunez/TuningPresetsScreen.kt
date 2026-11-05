@@ -19,13 +19,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-private val Background = Color(0xFF0D0D0F)
-private val HeaderBackground = Color(0xFF1B191E)
-private val CardBackground = Color(0xFF242328)
-private val TabBackground = Color(0xFF242328)
-private val Teal = Color(0xFF50D0C8)
-private val PrimaryText = Color(0xFFF4F1F5)
-private val SecondaryText = Color(0xFF99959E)
+private val Background: Color @Composable get() = MaterialTheme.colorScheme.background
+private val HeaderBackground: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val CardBackground: Color @Composable get() = MaterialTheme.colorScheme.surface
+private val TabBackground: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val Teal: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val PrimaryText: Color @Composable get() = MaterialTheme.colorScheme.onBackground
+private val SecondaryText: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 
 enum class PresetFilter {
     ALL,

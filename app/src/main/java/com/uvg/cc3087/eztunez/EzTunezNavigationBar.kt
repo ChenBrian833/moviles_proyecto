@@ -1,14 +1,12 @@
 package com.uvg.cc3087.eztunez
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
 enum class AppScreen {
     HOME,
@@ -24,7 +22,7 @@ fun EzTunezNavigationBar(
 ) {
 
     NavigationBar(
-        containerColor = Color(0xFF1B191E)
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
 
         NavigationBarItem(
@@ -72,7 +70,7 @@ fun EzTunezNavigationBar(
             },
             icon = {
                 Icon(
-                    imageVector = Icons.Default.List,
+                    imageVector = Icons.AutoMirrored.Filled.List,
                     contentDescription = "Presets"
                 )
             },
@@ -104,11 +102,10 @@ fun EzTunezNavigationBar(
 @Composable
 private fun navigationColors(): NavigationBarItemColors {
     return NavigationBarItemDefaults.colors(
-        selectedIconColor = Color(0xFF50D0C8),
-        selectedTextColor = Color(0xFF50D0C8),
-        indicatorColor = Color(0xFF006B63),
-        unselectedIconColor = Color(0xFF99959E),
-        unselectedTextColor = Color(0xFF99959E)
+        selectedIconColor = MaterialTheme.colorScheme.primary,
+        selectedTextColor = MaterialTheme.colorScheme.primary,
+        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
-//

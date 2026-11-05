@@ -2,8 +2,10 @@ package com.uvg.cc3087.eztunez
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.uvg.cc3087.eztunez.ui.theme.EztunezTheme
 import kotlinx.coroutines.delay
 import androidx.activity.enableEdgeToEdge
@@ -12,6 +14,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
 class MainActivity : ComponentActivity() {
+    private val settingsViewModel: SettingsViewModel by viewModels {
+        SettingsViewModel.Factory(DataStoreSettingsRepository(applicationContext))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,18 +36,22 @@ class MainActivity : ComponentActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         setContent {
+            val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
             EztunezTheme(
-                darkTheme = true,
+                darkTheme = settings.darkTheme,
                 dynamicColor = false
             ) {
-                App()
+                App(settings = settings, settingsViewModel = settingsViewModel)
             }
         }
     }
 }
 
 @Composable
-fun App() {
+fun App(
+    settings: TunerSettings,
+    settingsViewModel: SettingsViewModel
+) {
 
     var showLoadingScreen by remember {
         mutableStateOf(true)
@@ -77,6 +86,12 @@ fun App() {
 
             AppScreen.SETTINGS -> {
                 SettingsScreen(
+                    settings = settings,
+                    onMicSensitivityChange = settingsViewModel::updateMicSensitivity,
+                    onReferencePitchChange = settingsViewModel::updateReferencePitch,
+                    onDarkThemeChange = settingsViewModel::updateDarkTheme,
+                    onShowRealTimeHzChange = settingsViewModel::updateShowRealTimeHz,
+                    onNotationSystemChange = settingsViewModel::updateNotationSystem,
                     onNavigate = {
                         currentScreen = it
                     }
@@ -99,6 +114,7 @@ fun App() {
             AppScreen.TUNE -> {
                 TuneScreen(
                     mode = tuningMode,
+                    settings = settings,
                     onNavigate = {
                         currentScreen = it
                     }
