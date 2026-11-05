@@ -7,7 +7,8 @@ import kotlin.math.sqrt
 /** Tarsos YIN on consecutive microphone samples, without a mandatory audio filter. */
 internal class GuitarSignalAnalyzer(
     private val rmsThreshold: Float = DEFAULT_RMS_THRESHOLD,
-    private val referencePitch: Int = DEFAULT_REFERENCE_PITCH
+    private val referencePitch: Int = DEFAULT_REFERENCE_PITCH,
+    private val preset: TuningPreset = BuiltInTuningPresets.standard
 ) {
     companion object {
         const val SAMPLE_RATE = 44100
@@ -17,6 +18,7 @@ internal class GuitarSignalAnalyzer(
     }
 
     private val window = FloatArray(WINDOW_SIZE)
+    private val targetStrings = preset.guitarStrings(referencePitch)
     private var hasPreviousBlock = false
     // Start with the same YIN configuration as the version that detected bass strings.
     private val standardYin = Yin(SAMPLE_RATE.toFloat(), WINDOW_SIZE)
@@ -65,11 +67,11 @@ internal class GuitarSignalAnalyzer(
         if (!result.isPitched || !frequency.isFinite() || frequency !in 60f..400f ||
             !result.probability.isFinite() || result.probability < MIN_PROBABILITY
         ) return null
-        return convertFrequency(frequency, result.probability, referencePitch)
+        return convertFrequency(frequency, result.probability, referencePitch, preset.preferFlats)
     }
 
     private fun distanceToOpenString(frequency: Float): Float =
-        guitarStringsForReference(referencePitch).minOf {
+        targetStrings.minOf {
             abs(centsFrom(frequency, it.frequency))
         }
 }

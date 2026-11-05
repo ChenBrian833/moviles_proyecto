@@ -7,6 +7,9 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 
 enum class AppScreen {
     HOME,
@@ -21,6 +24,9 @@ fun EzTunezNavigationBar(
     onNavigate: (AppScreen) -> Unit
 ) {
 
+    // Configuration width follows rotation and multi-window resizing. Keep icon
+    // names available to accessibility when scaled labels would be too narrow.
+    val showLabels = LocalConfiguration.current.screenWidthDp >= 256 * LocalDensity.current.fontScale
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface
     ) {
@@ -33,16 +39,14 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.Home,
-                    contentDescription = "Tune"
+                    contentDescription = stringResource(R.string.nav_home)
                 )
             },
 
 
 
 
-            label = {
-                Text("Home")
-            },
+            label = if (showLabels) { { Text(stringResource(R.string.nav_home)) } } else null,
             colors = navigationColors()
         )
 
@@ -54,12 +58,10 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Tune"
+                    contentDescription = stringResource(R.string.nav_tune)
                 )
             },
-            label = {
-                Text("Tune")
-            },
+            label = if (showLabels) { { Text(stringResource(R.string.nav_tune)) } } else null,
             colors = navigationColors()
         )
 
@@ -71,12 +73,10 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.List,
-                    contentDescription = "Presets"
+                    contentDescription = stringResource(R.string.nav_presets)
                 )
             },
-            label = {
-                Text("Presets")
-            },
+            label = if (showLabels) { { Text(stringResource(R.string.nav_presets)) } } else null,
             colors = navigationColors()
         )
 
@@ -88,12 +88,10 @@ fun EzTunezNavigationBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings"
+                    contentDescription = stringResource(R.string.nav_settings)
                 )
             },
-            label = {
-                Text("Settings")
-            },
+            label = if (showLabels) { { Text(stringResource(R.string.nav_settings)) } } else null,
             colors = navigationColors()
         )
     }

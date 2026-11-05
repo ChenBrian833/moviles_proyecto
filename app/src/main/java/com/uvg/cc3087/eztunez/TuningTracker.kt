@@ -10,18 +10,10 @@ enum class TuningMode { AUTO, MANUAL }
 data class GuitarString(val id: Int, val note: String, val frequency: Float)
 
 // Equal temperament, A4 = 440 Hz. Ordered from the thickest to the thinnest string.
-val standardGuitarStrings = listOf(
-    GuitarString(1, "E2", 82.40689f),
-    GuitarString(2, "A2", 110.0f),
-    GuitarString(3, "D3", 146.83238f),
-    GuitarString(4, "G3", 195.99772f),
-    GuitarString(5, "B3", 246.94165f),
-    GuitarString(6, "E4", 329.62756f)
-)
+val standardGuitarStrings = BuiltInTuningPresets.standard.guitarStrings(DEFAULT_REFERENCE_PITCH)
 
 fun guitarStringsForReference(referencePitch: Int): List<GuitarString> {
-    val scale = normalizeReferencePitch(referencePitch) / 440f
-    return standardGuitarStrings.map { it.copy(frequency = it.frequency * scale) }
+    return BuiltInTuningPresets.standard.guitarStrings(referencePitch)
 }
 
 data class DetectedPitch(
@@ -37,15 +29,15 @@ internal fun centsFrom(frequency: Float, reference: Float): Float =
 internal fun convertFrequency(
     frequency: Float,
     probability: Float,
-    referencePitch: Int = DEFAULT_REFERENCE_PITCH
+    referencePitch: Int = DEFAULT_REFERENCE_PITCH,
+    preferFlats: Boolean = false
 ): DetectedPitch {
     val reference = normalizeReferencePitch(referencePitch).toDouble()
     val exactMidi = 69.0 + 12.0 * ln(frequency / reference) / ln(2.0)
     val nearestMidi = exactMidi.roundToInt()
-    val names = arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
     return DetectedPitch(
         frequency,
-        "${names[((nearestMidi % 12) + 12) % 12]}${nearestMidi / 12 - 1}",
+        noteNameForMidi(nearestMidi, preferFlats),
         ((exactMidi - nearestMidi) * 100.0).toFloat(),
         probability
     )
@@ -62,10 +54,11 @@ data class TuningState(
 /** Filters Tarsos readings only; Tarsos YIN remains the sole pitch detector. */
 class TuningTracker(
     private val mode: TuningMode,
-    referencePitch: Int = DEFAULT_REFERENCE_PITCH
+    referencePitch: Int = DEFAULT_REFERENCE_PITCH,
+    private val preset: TuningPreset = BuiltInTuningPresets.standard
 ) {
     private val referencePitch = normalizeReferencePitch(referencePitch)
-    private val guitarStrings = guitarStringsForReference(this.referencePitch)
+    private val guitarStrings = preset.guitarStrings(this.referencePitch)
 
     var state = TuningState(selectedString = guitarStrings.first())
         private set
@@ -84,6 +77,13 @@ class TuningTracker(
         val target = guitarStrings.first { it.id == id }
         clearTracking()
         state = TuningState(selectedString = target)
+        return state
+    }
+
+    /** A stopped capture has no valid measurement, but its tuning target is still selected. */
+    fun clearMeasurement(): TuningState {
+        clearTracking()
+        state = TuningState(selectedString = state.selectedString)
         return state
     }
 
@@ -165,7 +165,7 @@ class TuningTracker(
 
         state = TuningState(
             selectedString = target,
-            pitch = convertFrequency(frequency, pitch.probability, referencePitch),
+            pitch = convertFrequency(frequency, pitch.probability, referencePitch, preset.preferFlats),
             // Always compare to the target string, not to the nearest chromatic note.
             cents = centsFrom(frequency, target.frequency)
         )

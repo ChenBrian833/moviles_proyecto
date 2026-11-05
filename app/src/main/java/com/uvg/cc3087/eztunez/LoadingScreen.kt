@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +33,7 @@ import kotlin.math.sin
 
 @Composable
 fun LoadingScreen() {
+    val logoDescription = stringResource(R.string.logo_description)
     val teal = MaterialTheme.colorScheme.primary
     val background = MaterialTheme.colorScheme.background
     val primaryText = MaterialTheme.colorScheme.onBackground
@@ -61,7 +63,7 @@ fun LoadingScreen() {
             // Draw the X and its rings separately so the waves really expand.
             // The original bitmap remains available to the rest of the application.
             Canvas(
-                Modifier.size(152.dp).semantics { contentDescription = "EzTunez logo" }
+                Modifier.size(152.dp).semantics { contentDescription = logoDescription }
             ) {
                 val tint = Color(0xFF50EEE3)
                 val maxRadius = size.minDimension * 0.46f
@@ -104,7 +106,7 @@ fun LoadingScreen() {
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "EzTunez",
+                text = stringResource(R.string.app_name),
                 color = primaryText,
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
@@ -112,7 +114,7 @@ fun LoadingScreen() {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Perfect pitch, every time",
+                text = stringResource(R.string.tagline),
                 color = secondaryText,
                 fontSize = 16.sp
             )
@@ -124,7 +126,7 @@ fun LoadingScreen() {
             Box(Modifier.size(8.dp).alpha(dotAlpha).background(teal, CircleShape))
             Spacer(Modifier.width(12.dp))
             Text(
-                text = "CALIBRATING MIC...",
+                text = stringResource(R.string.loading_settings),
                 color = teal,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,

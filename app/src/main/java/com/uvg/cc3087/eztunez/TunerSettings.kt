@@ -1,6 +1,7 @@
 package com.uvg.cc3087.eztunez
 
 import kotlin.math.roundToInt
+import java.util.Locale
 
 enum class NotationSystem { STANDARD, SOLFEGE }
 
@@ -50,11 +51,15 @@ fun formatNote(note: String, notationSystem: NotationSystem): String {
 fun formatPitchDisplay(
     pitch: DetectedPitch?,
     showRealTimeHz: Boolean,
-    notationSystem: NotationSystem
+    notationSystem: NotationSystem,
+    frequencyPattern: String,
+    noSignal: String,
+    noSignalHz: String,
+    locale: Locale
 ): String {
-    if (pitch == null) return if (showRealTimeHz) "-- Hz" else "--"
+    if (pitch == null) return if (showRealTimeHz) noSignalHz else noSignal
     val note = formatNote(pitch.note, notationSystem)
-    return if (showRealTimeHz) "$note · %.1f Hz".format(pitch.frequency) else note
+    return if (showRealTimeHz) String.format(locale, frequencyPattern, note, pitch.frequency) else note
 }
 
 internal fun TunerSettings.normalized(): TunerSettings = copy(
