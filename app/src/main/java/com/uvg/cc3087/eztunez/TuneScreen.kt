@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -64,11 +66,13 @@ fun TuneScreen(
 
         topBar = {
             ScreenHeader(
-                title = stringResource(R.string.instrument_acoustic),
+                title = stringResource(
+                    if (mode == TuningMode.AUTO) R.string.mode_auto else R.string.mode_manual
+                ),
                 subtitle = stringResource(
-                    R.string.tuning_mode_subtitle,
-                    preset.localizedName(),
-                    if (mode == TuningMode.AUTO) stringResource(R.string.mode_auto) else stringResource(R.string.mode_manual)
+                    R.string.tuning_instrument_preset_subtitle,
+                    stringResource(R.string.instrument_acoustic),
+                    preset.localizedName()
                 )
             )
         },
@@ -239,6 +243,17 @@ fun TuneScreen(
                             vertical = 16.dp
                         )
                     ) {
+
+                        Text(
+                            text = stringResource(
+                                if (mode == TuningMode.AUTO) R.string.tuning_strings_auto
+                                else R.string.tuning_strings_manual
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.semantics { heading() }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),
