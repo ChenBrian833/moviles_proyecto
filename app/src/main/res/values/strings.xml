@@ -95,4 +95,32 @@
     <string name="symbol_chevron" translatable="false">›</string>
     <string name="symbol_minus" translatable="false">−</string>
     <string name="symbol_plus" translatable="false">+</string>
+    <string name="custom_edit_title">Edit custom tuning</string>
+    <string name="custom_name">Name</string>
+    <string name="custom_description">Description (optional)</string>
+    <string name="custom_strings_help">Strings are listed from lowest to highest. Choose a note and octave for each string.</string>
+    <string name="custom_lowest_string">String %1$d · lowest (thickest)</string>
+    <string name="custom_highest_string">String %1$d · highest (thinnest)</string>
+    <string name="custom_string">String %1$d</string>
+    <string name="custom_note">Note</string>
+    <string name="custom_octave">Octave</string>
+    <string name="custom_selector_value">%1$s: %2$s</string>
+    <string name="custom_save">Save preset</string>
+    <string name="custom_saving">Saving…</string>
+    <string name="custom_cancel">Cancel</string>
+    <string name="custom_edit">Edit</string>
+    <string name="custom_delete">Delete</string>
+    <string name="custom_delete_title">Delete custom preset?</string>
+    <string name="custom_delete_message">Delete “%1$s”? This cannot be undone.</string>
+    <string name="custom_deleting">Deleting…</string>
+    <string name="custom_name_required">Enter a name after removing extra spaces.</string>
+    <string name="custom_name_duplicate">A preset with this name already exists. Choose another name.</string>
+    <string name="custom_invalid_notes">Choose six valid notes with their octaves.</string>
+    <string name="custom_read_only">Built-in presets cannot be edited or deleted.</string>
+    <string name="custom_not_found">This custom preset no longer exists.</string>
+    <string name="custom_storage_error">Could not save your changes. Please try again.</string>
+    <string name="custom_loading">Loading presets…</string>
+    <string name="custom_load_error">Could not load your presets. Please try again.</string>
+    <string name="custom_selection_error">The selected preset is active, but could not be saved for the next launch.</string>
+    <string name="custom_empty">No custom presets yet. Use Create Custom to add one.</string>
 </resources>

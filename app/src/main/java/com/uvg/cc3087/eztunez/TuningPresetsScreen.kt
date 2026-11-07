@@ -15,176 +15,98 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-private val Background: Color @Composable get() = MaterialTheme.colorScheme.background
-private val HeaderBackground: Color @Composable get() = MaterialTheme.colorScheme.surface
-private val CardBackground: Color @Composable get() = MaterialTheme.colorScheme.surface
-private val TabBackground: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
-private val Teal: Color @Composable get() = MaterialTheme.colorScheme.primary
-private val PrimaryText: Color @Composable get() = MaterialTheme.colorScheme.onBackground
-private val SecondaryText: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TuningPresetsScreen(
     uiState: TuningPresetsUiState,
     onSelectFilter: (PresetFilter) -> Unit,
     onSelectPreset: (Int) -> Unit,
-    onNavigate: (AppScreen) -> Unit
+    onNavigate: (AppScreen) -> Unit,
+    onCreateCustom: () -> Unit = {},
+    onEditCustom: (Int) -> Unit = {},
+    onDeleteCustom: (Int) -> Unit = {},
+    onRetrySelection: () -> Unit = {}
 ) {
-    val snackbarHostState = remember {
-        SnackbarHostState()
-    }
-
-    val searchMessage = stringResource(R.string.search)
-    val createCustomMessage = stringResource(R.string.create_custom)
+    val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
+    val searchMessage = stringResource(R.string.search)
+    val createDescription = stringResource(R.string.create_custom_tuning)
     Scaffold(
-        containerColor = Background,
-
-        snackbarHost = {
-            SnackbarHost(
-                hostState = snackbarHostState
-            )
-        },
-
-        bottomBar = {
-            EzTunezNavigationBar(
-                selectedScreen = AppScreen.PRESETS,
-                onNavigate = onNavigate
-            )
-        },
-
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.tuning_presets),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryText
-                    )
-                },
-
-
-
-
-                actions = {
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                snackbarHostState.showSnackbar(searchMessage)
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = stringResource(R.string.search),
-                            tint = PrimaryText,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = HeaderBackground
-                )
-            )
+            ScreenHeader(title = stringResource(R.string.tuning_presets), trailingContent = {
+                IconButton(onClick = { scope.launch { snackbar.showSnackbar(searchMessage) } }) {
+                    Icon(Icons.Default.Search, contentDescription = searchMessage)
+                }
+            })
         },
-
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    scope.launch {
-                        snackbarHostState.showSnackbar(createCustomMessage)
-                    }
-                },
-
-                containerColor = Teal,
-                contentColor = Background,
-                shape = RoundedCornerShape(16.dp),
-
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.create_custom_tuning)
-                    )
-                },
-
-                text = {
-                    Text(
-                        text = stringResource(R.string.create_custom),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            )
-        }
-
-    ) { innerPadding ->
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            PresetFilterBar(
-                selectedFilter = uiState.selectedFilter,
-                onFilterSelected = {
-                    onSelectFilter(it)
-                }
-            )
-
+        bottomBar = { EzTunezNavigationBar(AppScreen.PRESETS, onNavigate) }
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+            // Actions and filters scroll with the list so enlarged text leaves
+            // room for the cards. The create action never covers Edit/Delete.
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 24.dp,
-                    bottom = 120.dp
-                ),
-
+                modifier = Modifier.widthIn(max = 600.dp).fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-
-                items(
-                    items = uiState.presets,
-
-
-                    key = { preset ->
-                        preset.id
+                if (uiState.selectionSaveFailed) {
+                    item {
+                        Text(stringResource(R.string.custom_selection_error), color = MaterialTheme.colorScheme.error)
+                        TextButton(onClick = onRetrySelection) { Text(stringResource(R.string.retry)) }
                     }
-                ) { preset ->
-                    val selectedMessage = stringResource(R.string.preset_selected, preset.localizedName())
-
-                    TuningPresetCard(
-                        preset = preset,
-
-                        // The card checks whether its ID matches the currently selected ID.
-                        isSelected = preset.id == uiState.selectedPresetId,
-
-                        onClick = {
-
-                            onSelectPreset(preset.id)
-
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    selectedMessage,
-                                    duration = SnackbarDuration.Short
-
+                }
+                item {
+                    Button(
+                        onClick = onCreateCustom,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            .semantics { contentDescription = createDescription },
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.create_custom), modifier = Modifier.weight(1f),
+                            fontWeight = FontWeight.Bold)
+                    }
+                }
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                        FlowRow(Modifier.fillMaxWidth().padding(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            for ((filter, label) in listOf(
+                                PresetFilter.ALL to R.string.all_presets,
+                                PresetFilter.GUITAR to R.string.filter_guitar,
+                                PresetFilter.CUSTOM to R.string.filter_custom
+                            )) {
+                                FilterChip(
+                                    selected = uiState.selectedFilter == filter,
+                                    onClick = { onSelectFilter(filter) },
+                                    label = { Text(stringResource(label)) },
+                                    modifier = Modifier.heightIn(min = 48.dp)
                                 )
                             }
                         }
+                    }
+                }
+                if (uiState.presets.isEmpty()) item { Text(stringResource(R.string.custom_empty)) }
+                items(uiState.presets, key = { it.id }) { preset ->
+                    val selectedMessage = stringResource(R.string.preset_selected, preset.localizedName())
+                    TuningPresetCard(
+                        preset, preset.id == uiState.selectedPresetId,
+                        onClick = {
+                            onSelectPreset(preset.id)
+                            scope.launch { snackbar.showSnackbar(selectedMessage) }
+                        },
+                        onEdit = if (preset.category == PresetCategory.CUSTOM) ({ onEditCustom(preset.id) }) else null,
+                        onDelete = if (preset.category == PresetCategory.CUSTOM) ({ onDeleteCustom(preset.id) }) else null
                     )
                 }
             }
@@ -192,219 +114,48 @@ fun TuningPresetsScreen(
     }
 }
 
-
-@Composable
-private fun PresetFilterBar(
-    selectedFilter: PresetFilter,
-    onFilterSelected: (PresetFilter) -> Unit
-) {
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-
-        shape = RoundedCornerShape(12.dp),
-
-        colors = CardDefaults.cardColors(
-            containerColor = TabBackground
-        )
-    ) {
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp)
-        ) {
-
-            FilterButton(
-                text = stringResource(R.string.all_presets),
-                selected = selectedFilter == PresetFilter.ALL,
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    onFilterSelected(
-                        PresetFilter.ALL
-                    )
-                }
-            )
-
-            FilterButton(
-                text = stringResource(R.string.filter_guitar),
-                selected = selectedFilter == PresetFilter.GUITAR,
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    onFilterSelected(
-                        PresetFilter.GUITAR
-                    )
-                }
-            )
-
-            FilterButton(
-                text = stringResource(R.string.filter_custom),
-                selected = selectedFilter == PresetFilter.CUSTOM,
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    onFilterSelected(
-                        PresetFilter.CUSTOM
-                    )
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun FilterButton(
-    text: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-
-    Surface(
-        modifier = modifier
-            .height(48.dp)
-            .clickable(
-                onClick = onClick
-            ),
-
-        color = if (selected) {
-            Teal
-        } else {
-            Color.Transparent
-        },
-
-        shape = RoundedCornerShape(10.dp)
-    ) {
-
-        Box(
-            contentAlignment = Alignment.Center
-        ) {
-
-            Text(
-                text = text,
-
-                style = MaterialTheme.typography.bodyLarge,
-
-                fontWeight = if (selected) {
-                    FontWeight.Bold
-                } else {
-                    FontWeight.Normal
-                },
-
-                color = if (selected) {
-                    Background
-                } else {
-                    PrimaryText
-                }
-            )
-        }
-    }
-}
-
-
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TuningPresetCard(
     preset: TuningPreset,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEdit: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null
 ) {
-
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                onClick = onClick
-            ),
-
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-
-        colors = CardDefaults.cardColors(
-            containerColor = CardBackground
-        ),
-
-        // Only the currently selected card receives the teal border.
-        border = if (isSelected) {
-            BorderStroke(
-                width = 1.dp,
-                color = Teal
-            )
-        } else {
-            null
-        }
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
     ) {
-
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (preset.tuning.isBlank()) {
-                        preset.localizedName()
-                    } else {
-                        stringResource(R.string.preset_title, preset.localizedName(), preset.tuning)
-                    },
-
-                    modifier = Modifier.weight(1f),
-
-                    style = MaterialTheme.typography.titleLarge,
-
-                    fontWeight = FontWeight.Bold,
-
-                    color = PrimaryText
+                    text = stringResource(R.string.preset_title, preset.localizedName(),
+                        if (preset.category == PresetCategory.CUSTOM) {
+                            preset.midiNotes.joinToString(" ") { noteNameForMidi(it) }
+                        } else preset.tuning),
+                    modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
-
-                // Checkmark only appears  on the currently selected preset.
-                if (isSelected) {
-
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = stringResource(R.string.currently_selected_description),
-                        tint = Teal,
-                        modifier = Modifier.size(28.dp)
-                    )
+                if (isSelected) Icon(Icons.Default.CheckCircle,
+                    contentDescription = stringResource(R.string.currently_selected_description),
+                    tint = MaterialTheme.colorScheme.primary)
+            }
+            if (preset.localizedDescription().isNotBlank()) {
+                Text(preset.localizedDescription(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (onEdit != null && onDelete != null) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onEdit) { Text(stringResource(R.string.custom_edit)) }
+                    TextButton(onClick = onDelete) { Text(stringResource(R.string.custom_delete)) }
                 }
             }
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
             Text(
-                text = preset.localizedDescription(),
-                style = MaterialTheme.typography.bodyLarge,
-                color = SecondaryText
-            )
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            Text(
-                text = if (isSelected) {
-                    stringResource(R.string.currently_selected)
-                } else {
-                    stringResource(R.string.select_tuning)
-                },
-
-                modifier = Modifier.align(
-                    Alignment.End
-                ),
-
-                style = MaterialTheme.typography.titleMedium,
-
-                fontWeight = FontWeight.Bold,
-
-                color = if (isSelected) {
-                    Teal
-                } else {
-                    SecondaryText
-                }
+                stringResource(if (isSelected) R.string.currently_selected else R.string.select_tuning),
+                modifier = Modifier.align(Alignment.End), fontWeight = FontWeight.Bold,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

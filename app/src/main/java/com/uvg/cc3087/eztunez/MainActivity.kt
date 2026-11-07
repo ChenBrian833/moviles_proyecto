@@ -1,6 +1,12 @@
 package com.uvg.cc3087.eztunez
 
 import android.os.Bundle
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import androidx.activity.compose.setContent
@@ -29,7 +35,13 @@ class MainActivity : ComponentActivity() {
         )
     }
     private val presetsViewModel: TuningPresetsViewModel by viewModels {
-        TuningPresetsViewModel.Factory(BuiltInTuningPresetRepository())
+        TuningPresetsViewModel.Factory(
+            RoomTuningPresetRepository(
+                PresetDatabase.getInstance(applicationContext),
+                BuiltInTuningPresets.all.map { getString(requireNotNull(it.nameRes)) }
+            ),
+            DataStorePresetSelectionRepository(applicationContext)
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,6 +109,11 @@ fun App(
         }
     }
 
+    if (presetsState.isLoading || presetsState.loadFailed) {
+        PresetLoadStatus(presetsState.loadFailed, presetsViewModel::reload)
+        return
+    }
+
     when (currentScreen) {
         AppScreen.PRESETS -> TuningPresetsRoute(
             viewModel = presetsViewModel,
@@ -123,5 +140,16 @@ fun App(
             settings = settings,
             onNavigate = navigateTo
         )
+    }
+}
+
+@Composable
+private fun PresetLoadStatus(failed: Boolean, onRetry: () -> Unit) {
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(if (failed) R.string.custom_load_error else R.string.custom_loading))
+            if (failed) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+        }
     }
 }
