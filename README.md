@@ -151,6 +151,11 @@ Los textos visibles, mensajes de micrófono, etiquetas accesibles y descripcione
 presets integrados se definen en `app/src/main/res/values/strings.xml`. Los valores
 variables usan marcadores indexados; los presets personalizados mantienen su texto.
 La notación musical y las claves persistidas no se traducen.
+La app incluye inglés, español y ruso. En Ajustes → Idioma se puede elegir un
+idioma o seguir el del sistema. AppCompat y las preferencias de idioma de Android
+conservan la elección; cambiar de idioma recrea la Activity manteniendo el estado
+guardado y los ViewModels. Los nombres y descripciones de presets personalizados
+se conservan tal como se escribieron.
 
 Home y Tune usan contenido desplazable con ancho máximo centrado. Sus encabezados,
 tarjetas y controles crecen con el texto; las cuerdas se distribuyen en varias filas

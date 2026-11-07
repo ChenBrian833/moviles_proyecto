@@ -41,11 +41,15 @@ android {
     buildFeatures {
         compose = true
     }
+    androidResources {
+        localeFilters += listOf("en", "es", "ru")
+    }
 }
 
 room { schemaDirectory("$projectDir/schemas") }
 
 dependencies {
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)

@@ -7,7 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.viewModels
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
@@ -18,7 +18,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels {
         SettingsViewModel.Factory(DataStoreSettingsRepository(applicationContext))
     }
@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         TuningPresetsViewModel.Factory(
             RoomTuningPresetRepository(
                 PresetDatabase.getInstance(applicationContext),
-                BuiltInTuningPresets.all.map { getString(requireNotNull(it.nameRes)) }
+                builtInPresetNames(applicationContext)
             ),
             DataStorePresetSelectionRepository(applicationContext)
         )

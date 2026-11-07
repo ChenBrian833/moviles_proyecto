@@ -8,12 +8,14 @@ espressoCore = "3.5.1"
 lifecycleRuntimeKtx = "2.6.1"
 datastore = "1.1.1"
 activityCompose = "1.8.0"
+appcompat = "1.7.1"
 composeBom = "2024.09.00"
 coroutines = "1.7.3"
 room = "2.7.2"
 ksp = "2.0.21-1.0.28"
 
 [libraries]
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }

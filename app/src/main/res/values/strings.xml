@@ -1,91 +1,91 @@
 <resources>
-    <string name="loading_settings">Loading settings…</string>
-    <string name="settings_save_error">Could not save your settings. Your choices are still active, but may be lost when the app closes.</string>
-    <string name="retry_save">Retry save</string>
-    <string name="current_tuning">%1$s (%2$s)</string>
-    <string name="tuning_instrument_preset_subtitle">%1$s · %2$s</string>
-    <string name="tuning_strings_auto">Automatic string selection</string>
-    <string name="tuning_strings_manual">Select a string…</string>
+    <string name="loading_settings" translatable="true">Loading settings…</string>
+    <string name="settings_save_error" translatable="true">Could not save your settings. Your choices are still active, but may be lost when the app closes.</string>
+    <string name="retry_save" translatable="true">Retry save</string>
+    <string name="current_tuning" translatable="false">%1$s (%2$s)</string>
+    <string name="tuning_instrument_preset_subtitle" translatable="false">%1$s · %2$s</string>
+    <string name="tuning_strings_auto" translatable="true">Automatic string selection</string>
+    <string name="tuning_strings_manual" translatable="true">Select a string…</string>
     <string name="app_name" translatable="false">EzTunez</string>
-    <string name="logo_description" translatable="false">EzTunez logo</string>
-    <string name="tagline">Perfect pitch, every time</string>
-    <string name="nav_home">Home</string>
-    <string name="nav_tune">Tune</string>
-    <string name="nav_presets">Presets</string>
-    <string name="nav_settings">Settings</string>
-    <string name="instrument_acoustic">Acoustic</string>
-    <string name="instrument_acoustic_guitar">Acoustic Guitar</string>
-    <string name="change_instrument">Change Instrument</string>
-    <string name="tuning_modes">TUNING MODES</string>
-    <string name="mode_auto">Auto Tune</string>
-    <string name="mode_auto_description">Hands-free automatic string detection</string>
-    <string name="mode_manual">Manual Tune</string>
-    <string name="mode_manual_description">Select and tune strings individually</string>
-    <string name="mode_chromatic">Chromatic Tuner</string>
-    <string name="mode_chromatic_description">Tune to any of the 12 chromatic pitches</string>
-    <string name="chromatic_coming_soon">Chromatic Tuner coming soon</string>
-    <string name="metronome">Metronome</string>
-    <string name="metronome_description">Keep rhythm with visual and audio beats</string>
-    <string name="metronome_coming_soon">Metronome coming soon</string>
-    <string name="settings_audio">Audio &amp; Sensitivity</string>
-    <string name="mic_sensitivity">Mic Sensitivity</string>
-    <string name="detection_algorithm">Detection Algorithm</string>
-    <string name="auto_detect">Auto-detect</string>
-    <string name="advanced_fft_soon">Advanced FFT · Soon</string>
-    <string name="reference_pitch">Reference Pitch A4</string>
-    <string name="default_concert_pitch">Default concert pitch</string>
-    <string name="display_options">Display Options</string>
-    <string name="dark_theme">Dark Theme Mode</string>
-    <string name="show_realtime_hz">Show Real-time Hz</string>
-    <string name="notation_system">Notation System</string>
-    <string name="notation_standard">Standard (C-D-E)</string>
-    <string name="notation_solfege">Solfège (Do-Re-Mi)</string>
-    <string name="app_version">App Version</string>
+    <string name="logo_description" translatable="true">EzTunez logo</string>
+    <string name="tagline" translatable="true">Perfect pitch, every time</string>
+    <string name="nav_home" translatable="true">Home</string>
+    <string name="nav_tune" translatable="true">Tune</string>
+    <string name="nav_presets" translatable="true">Presets</string>
+    <string name="nav_settings" translatable="true">Settings</string>
+    <string name="instrument_acoustic" translatable="true">Acoustic</string>
+    <string name="instrument_acoustic_guitar" translatable="true">Acoustic Guitar</string>
+    <string name="change_instrument" translatable="true">Change Instrument</string>
+    <string name="tuning_modes" translatable="true">TUNING MODES</string>
+    <string name="mode_auto" translatable="true">Auto Tune</string>
+    <string name="mode_auto_description" translatable="true">Hands-free automatic string detection</string>
+    <string name="mode_manual" translatable="true">Manual Tune</string>
+    <string name="mode_manual_description" translatable="true">Select and tune strings individually</string>
+    <string name="mode_chromatic" translatable="true">Chromatic Tuner</string>
+    <string name="mode_chromatic_description" translatable="true">Tune to any of the 12 chromatic pitches</string>
+    <string name="chromatic_coming_soon" translatable="true">Chromatic Tuner coming soon</string>
+    <string name="metronome" translatable="true">Metronome</string>
+    <string name="metronome_description" translatable="true">Keep rhythm with visual and audio beats</string>
+    <string name="metronome_coming_soon" translatable="true">Metronome coming soon</string>
+    <string name="settings_audio" translatable="true">Audio &amp; Sensitivity</string>
+    <string name="mic_sensitivity" translatable="true">Mic Sensitivity</string>
+    <string name="detection_algorithm" translatable="true">Detection Algorithm</string>
+    <string name="auto_detect" translatable="true">Auto-detect</string>
+    <string name="advanced_fft_soon" translatable="true">Advanced FFT · Soon</string>
+    <string name="reference_pitch" translatable="true">Reference Pitch A4</string>
+    <string name="default_concert_pitch" translatable="true">Default concert pitch</string>
+    <string name="display_options" translatable="true">Display Options</string>
+    <string name="dark_theme" translatable="true">Dark Theme Mode</string>
+    <string name="show_realtime_hz" translatable="true">Show Real-time Hz</string>
+    <string name="notation_system" translatable="true">Notation System</string>
+    <string name="notation_standard" translatable="true">Standard (C-D-E)</string>
+    <string name="notation_solfege" translatable="true">Solfège (Do-Re-Mi)</string>
+    <string name="app_version" translatable="true">App Version</string>
     <string name="app_version_value" translatable="false">v1.0 (Pro)</string>
-    <string name="rate_app">Rate %1$s</string>
-    <string name="support_feedback">Send Support Feedback</string>
-    <string name="play_string">Play a string</string>
-    <string name="in_tune">In Tune ✓</string>
-    <string name="tune_up">Tune Up</string>
-    <string name="tune_down">Tune Down</string>
-    <string name="note_offset">%1$s offset: %2$.1f cents</string>
-    <string name="note_frequency">%1$s · %2$.1f Hz</string>
-    <string name="frequency_hz">%1$d Hz</string>
-    <string name="percent_value">%1$d%%</string>
+    <string name="rate_app" translatable="true">Rate %1$s</string>
+    <string name="support_feedback" translatable="true">Send Support Feedback</string>
+    <string name="play_string" translatable="true">Play a string</string>
+    <string name="in_tune" translatable="true">In Tune ✓</string>
+    <string name="tune_up" translatable="true">Tune Up</string>
+    <string name="tune_down" translatable="true">Tune Down</string>
+    <string name="note_offset" translatable="true">%1$s offset: %2$.1f cents</string>
+    <string name="note_frequency" translatable="false">%1$s · %2$.1f Hz</string>
+    <string name="frequency_hz" translatable="false">%1$d Hz</string>
+    <string name="percent_value" translatable="false">%1$d%%</string>
     <string name="no_signal" translatable="false">--</string>
-    <string name="no_signal_hz">-- Hz</string>
-    <string name="retry">Retry</string>
-    <string name="open_app_settings">Open app settings</string>
-    <string name="microphone_permission_pending">Microphone access is needed to hear and tune your guitar.</string>
-    <string name="microphone_permission_granted">Microphone permission granted. Starting…</string>
-    <string name="microphone_permission_denied">Microphone permission was denied. Allow it to start tuning.</string>
-    <string name="microphone_permission_blocked">Microphone permission is blocked. Enable it in app settings.</string>
-    <string name="microphone_unavailable">The microphone is not available.</string>
-    <string name="microphone_initialization_failed">The microphone could not be initialized.</string>
-    <string name="microphone_interrupted">Microphone capture was interrupted.</string>
-    <string name="microphone_listening">Listening…</string>
-    <string name="tuning_presets">Tuning Presets</string>
-    <string name="search">Search</string>
-    <string name="create_custom">Create Custom</string>
-    <string name="create_custom_tuning">Create custom tuning</string>
-    <string name="preset_selected">%1$s selected</string>
-    <string name="all_presets">All Presets</string>
-    <string name="filter_guitar">Guitar</string>
-    <string name="filter_custom">Custom</string>
-    <string name="preset_title">%1$s — %2$s</string>
-    <string name="currently_selected_description">Currently selected</string>
-    <string name="currently_selected">Currently Selected</string>
-    <string name="select_tuning">Select Tuning</string>
-    <string name="preset_standard">Standard</string>
-    <string name="preset_standard_description">Common layout suitable for most acoustic &amp; electric guitars</string>
-    <string name="preset_drop_d">Drop D</string>
-    <string name="preset_drop_d_description">Heavy low response, lower the 6th string a whole step</string>
-    <string name="preset_open_g">Open G</string>
-    <string name="preset_open_g_description">Popular for slide blues playing &amp; folk compositions</string>
-    <string name="preset_dadgad">DADGAD Tuning</string>
-    <string name="preset_dadgad_description">Celtic folk tuning with rich natural resonance</string>
-    <string name="preset_half_step_down">Half Step Down</string>
-    <string name="preset_half_step_down_description">Standard relative pitches, lowered by one semitone</string>
+    <string name="no_signal_hz" translatable="false">-- Hz</string>
+    <string name="retry" translatable="true">Retry</string>
+    <string name="open_app_settings" translatable="true">Open app settings</string>
+    <string name="microphone_permission_pending" translatable="true">Microphone access is needed to hear and tune your guitar.</string>
+    <string name="microphone_permission_granted" translatable="true">Microphone permission granted. Starting…</string>
+    <string name="microphone_permission_denied" translatable="true">Microphone permission was denied. Allow it to start tuning.</string>
+    <string name="microphone_permission_blocked" translatable="true">Microphone permission is blocked. Enable it in app settings.</string>
+    <string name="microphone_unavailable" translatable="true">The microphone is not available.</string>
+    <string name="microphone_initialization_failed" translatable="true">The microphone could not be initialized.</string>
+    <string name="microphone_interrupted" translatable="true">Microphone capture was interrupted.</string>
+    <string name="microphone_listening" translatable="true">Listening…</string>
+    <string name="tuning_presets" translatable="true">Tuning Presets</string>
+    <string name="search" translatable="true">Search</string>
+    <string name="create_custom" translatable="true">Create Custom</string>
+    <string name="create_custom_tuning" translatable="true">Create custom tuning</string>
+    <string name="preset_selected" translatable="true">%1$s selected</string>
+    <string name="all_presets" translatable="true">All Presets</string>
+    <string name="filter_guitar" translatable="true">Guitar</string>
+    <string name="filter_custom" translatable="true">Custom</string>
+    <string name="preset_title" translatable="false">%1$s — %2$s</string>
+    <string name="currently_selected_description" translatable="true">Currently selected</string>
+    <string name="currently_selected" translatable="true">Currently Selected</string>
+    <string name="select_tuning" translatable="true">Select Tuning</string>
+    <string name="preset_standard" translatable="true">Standard</string>
+    <string name="preset_standard_description" translatable="true">Common layout suitable for most acoustic &amp; electric guitars</string>
+    <string name="preset_drop_d" translatable="true">Drop D</string>
+    <string name="preset_drop_d_description" translatable="true">Heavy low response, lower the 6th string a whole step</string>
+    <string name="preset_open_g" translatable="true">Open G</string>
+    <string name="preset_open_g_description" translatable="true">Popular for slide blues playing &amp; folk compositions</string>
+    <string name="preset_dadgad" translatable="true">DADGAD Tuning</string>
+    <string name="preset_dadgad_description" translatable="true">Celtic folk tuning with rich natural resonance</string>
+    <string name="preset_half_step_down" translatable="true">Half Step Down</string>
+    <string name="preset_half_step_down_description" translatable="true">Standard relative pitches, lowered by one semitone</string>
     <!-- Decorative glyphs are kept unchanged across languages. -->
     <string name="symbol_music" translatable="false">♬</string>
     <string name="symbol_instrument" translatable="false">▣</string>
@@ -95,32 +95,38 @@
     <string name="symbol_chevron" translatable="false">›</string>
     <string name="symbol_minus" translatable="false">−</string>
     <string name="symbol_plus" translatable="false">+</string>
-    <string name="custom_edit_title">Edit custom tuning</string>
-    <string name="custom_name">Name</string>
-    <string name="custom_description">Description (optional)</string>
-    <string name="custom_strings_help">Strings are listed from lowest to highest. Choose a note and octave for each string.</string>
-    <string name="custom_lowest_string">String %1$d · lowest (thickest)</string>
-    <string name="custom_highest_string">String %1$d · highest (thinnest)</string>
-    <string name="custom_string">String %1$d</string>
-    <string name="custom_note">Note</string>
-    <string name="custom_octave">Octave</string>
-    <string name="custom_selector_value">%1$s: %2$s</string>
-    <string name="custom_save">Save preset</string>
-    <string name="custom_saving">Saving…</string>
-    <string name="custom_cancel">Cancel</string>
-    <string name="custom_edit">Edit</string>
-    <string name="custom_delete">Delete</string>
-    <string name="custom_delete_title">Delete custom preset?</string>
-    <string name="custom_delete_message">Delete “%1$s”? This cannot be undone.</string>
-    <string name="custom_deleting">Deleting…</string>
-    <string name="custom_name_required">Enter a name after removing extra spaces.</string>
-    <string name="custom_name_duplicate">A preset with this name already exists. Choose another name.</string>
-    <string name="custom_invalid_notes">Choose six valid notes with their octaves.</string>
-    <string name="custom_read_only">Built-in presets cannot be edited or deleted.</string>
-    <string name="custom_not_found">This custom preset no longer exists.</string>
-    <string name="custom_storage_error">Could not save your changes. Please try again.</string>
-    <string name="custom_loading">Loading presets…</string>
-    <string name="custom_load_error">Could not load your presets. Please try again.</string>
-    <string name="custom_selection_error">The selected preset is active, but could not be saved for the next launch.</string>
-    <string name="custom_empty">No custom presets yet. Use Create Custom to add one.</string>
+    <string name="custom_edit_title" translatable="true">Edit custom tuning</string>
+    <string name="custom_name" translatable="true">Name</string>
+    <string name="custom_description" translatable="true">Description (optional)</string>
+    <string name="custom_strings_help" translatable="true">Strings are listed from lowest to highest. Choose a note and octave for each string.</string>
+    <string name="custom_lowest_string" translatable="true">String %1$d · lowest (thickest)</string>
+    <string name="custom_highest_string" translatable="true">String %1$d · highest (thinnest)</string>
+    <string name="custom_string" translatable="true">String %1$d</string>
+    <string name="custom_note" translatable="true">Note</string>
+    <string name="custom_octave" translatable="true">Octave</string>
+    <string name="custom_selector_value" translatable="false">%1$s: %2$s</string>
+    <string name="custom_save" translatable="true">Save preset</string>
+    <string name="custom_saving" translatable="true">Saving…</string>
+    <string name="custom_cancel" translatable="true">Cancel</string>
+    <string name="custom_edit" translatable="true">Edit</string>
+    <string name="custom_delete" translatable="true">Delete</string>
+    <string name="custom_delete_title" translatable="true">Delete custom preset?</string>
+    <string name="custom_delete_message" translatable="true">Delete “%1$s”? This cannot be undone.</string>
+    <string name="custom_deleting" translatable="true">Deleting…</string>
+    <string name="custom_name_required" translatable="true">Enter a name after removing extra spaces.</string>
+    <string name="custom_name_duplicate" translatable="true">A preset with this name already exists. Choose another name.</string>
+    <string name="custom_invalid_notes" translatable="true">Choose six valid notes with their octaves.</string>
+    <string name="custom_read_only" translatable="true">Built-in presets cannot be edited or deleted.</string>
+    <string name="custom_not_found" translatable="true">This custom preset no longer exists.</string>
+    <string name="custom_storage_error" translatable="true">Could not save your changes. Please try again.</string>
+    <string name="custom_loading" translatable="true">Loading presets…</string>
+    <string name="custom_load_error" translatable="true">Could not load your presets. Please try again.</string>
+    <string name="custom_selection_error" translatable="true">The selected preset is active, but could not be saved for the next launch.</string>
+    <string name="custom_empty" translatable="true">No custom presets yet. Use Create Custom to add one.</string>
+    <string name="app_language" translatable="true">Language</string>
+    <string name="language_summary" translatable="true">Use your device language or choose a language for EzTunez.</string>
+    <string name="language_system" translatable="true">System default</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_spanish" translatable="false">Español</string>
+    <string name="language_russian" translatable="false">Русский</string>
 </resources>

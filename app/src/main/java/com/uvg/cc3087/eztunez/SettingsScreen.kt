@@ -6,11 +6,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -34,6 +39,8 @@ fun SettingsScreen(
     onDarkThemeChange: (Boolean) -> Unit,
     onShowRealTimeHzChange: (Boolean) -> Unit,
     onNotationSystemChange: (NotationSystem) -> Unit,
+    language: AppLanguage,
+    onLanguageChange: (AppLanguage) -> Unit,
     saveError: Boolean,
     onRetrySave: () -> Unit,
     onNavigate: (AppScreen) -> Unit
@@ -159,7 +166,8 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                        .height(IntrinsicSize.Min)
+                        .heightIn(min = 48.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
 
@@ -325,7 +333,8 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                        .height(IntrinsicSize.Min)
+                        .heightIn(min = 48.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
 
@@ -351,6 +360,16 @@ fun SettingsScreen(
                 }
             }
 
+
+            SettingsSectionCard(title = stringResource(R.string.app_language)) {
+                Text(
+                    stringResource(R.string.language_summary),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = SettingsSecondaryText
+                )
+                Spacer(Modifier.height(12.dp))
+                LanguagePicker(language, onLanguageChange)
+            }
 
             //  APP INFORMATION
 
@@ -454,6 +473,33 @@ private fun SettingsSectionCard(
 
 //  SELECTABLE BUTTON
 
+@Composable
+private fun LanguagePicker(language: AppLanguage, onLanguageChange: (AppLanguage) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+            Text(stringResource(language.labelRes), Modifier.weight(1f))
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            AppLanguage.entries.forEach { option ->
+                val isSelected = option == language
+                DropdownMenuItem(
+                    text = { Text(stringResource(option.labelRes)) },
+                    leadingIcon = {
+                        if (isSelected) Icon(Icons.Default.Check, contentDescription = null)
+                    },
+                    modifier = Modifier.semantics { selected = isSelected },
+                    onClick = {
+                        expanded = false
+                        onLanguageChange(option)
+                    }
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun SettingsChoiceButton(
@@ -482,6 +528,7 @@ private fun SettingsChoiceButton(
     ) {
 
         Box(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
 
