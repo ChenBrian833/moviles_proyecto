@@ -59,6 +59,7 @@ class TuningTracker(
 ) {
     private val referencePitch = normalizeReferencePitch(referencePitch)
     private val guitarStrings = preset.guitarStrings(this.referencePitch)
+    private val acceptedFrequencies = preset.captureFrequencyRange(this.referencePitch)
 
     var state = TuningState(selectedString = guitarStrings.first())
         private set
@@ -101,7 +102,7 @@ class TuningTracker(
         }
 
         if (pitch == null || !pitch.frequency.isFinite() ||
-            pitch.frequency !in 60f..400f || !pitch.probability.isFinite() ||
+            pitch.frequency !in acceptedFrequencies || !pitch.probability.isFinite() ||
             pitch.probability < GuitarSignalAnalyzer.MIN_PROBABILITY
         ) {
             candidateStringId = null
