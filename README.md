@@ -228,8 +228,9 @@ También se creó y seleccionó un preset temporal en la aplicación real, se te
 su proceso y se abrió de nuevo: permanecieron tanto el preset como su selección.
 Después se eliminó ese preset y se comprobó el regreso a Standard.
 
-El análisis adicional `lintDebug` no se completó: quedó esperando descargas de
-dependencias y se interrumpió para ejecutar las verificaciones requeridas por separado.
+El usuario ejecutó manualmente `./gradlew lintDebug --console=plain` y terminó
+con `BUILD SUCCESSFUL`. También comprobó manualmente la creación, edición y
+eliminación, y que los presets y su selección se conservan al cerrar y reabrir la app.
 La respuesta acústica con una guitarra real y los extremos del rango MIDI quedan
 para comprobación manual; las pruebas de audio usan señales sintetizadas.
 
