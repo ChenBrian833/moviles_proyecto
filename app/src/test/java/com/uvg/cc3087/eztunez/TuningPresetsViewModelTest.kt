@@ -2,14 +2,30 @@ package com.uvg.cc3087.eztunez
 
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Before
+import org.junit.After
+import androidx.lifecycle.ViewModelStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.*
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TuningPresetsViewModelTest {
+    private val dispatcher = StandardTestDispatcher()
+    private val store = ViewModelStore()
+    @Before fun setUp() { Dispatchers.setMain(dispatcher) }
+    @After fun tearDown() { store.clear(); Dispatchers.resetMain() }
+    private fun ready(model: TuningPresetsViewModel): TuningPresetsViewModel {
+        store.put("presets", model)
+        dispatcher.scheduler.runCurrent()
+        return model
+    }
     private val guitar = BuiltInTuningPresets.standard
     private val custom = TuningPreset(8, "My tuning", listOf(38, 45, 50, 55, 59, 64), "Custom", PresetCategory.CUSTOM)
 
-    private fun viewModel() = TuningPresetsViewModel(object : TuningPresetRepository {
+    private fun viewModel() = ready(TuningPresetsViewModel(object : TuningPresetRepository {
         override fun getPresets() = listOf(guitar, custom)
-    })
+    }))
 
     @Test fun filtersUseRepositoryCategoriesAndAllRestoresTheCatalog() {
         val viewModel = viewModel()
@@ -49,7 +65,7 @@ class TuningPresetsViewModelTest {
     }
 
     @Test fun builtInCatalogStillStartsAtStandardAndHasNoCustomPresets() {
-        val viewModel = TuningPresetsViewModel(BuiltInTuningPresetRepository())
+        val viewModel = ready(TuningPresetsViewModel(BuiltInTuningPresetRepository()))
         assertEquals(listOf(1, 2, 3, 4, 5), viewModel.uiState.value.presets.map { it.id })
         val selected = viewModel.uiState.value.presets.single {
             it.id == viewModel.uiState.value.selectedPresetId
