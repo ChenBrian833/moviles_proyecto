@@ -32,6 +32,7 @@ presentaciones.
 | UI | Jetpack Compose |
 | Detección | AudioRecord + TarsosDSP YIN |
 | Preferencias | Preferences DataStore |
+| Presets personalizados | Room 2.7.2 + KSP 2.0.21-1.0.28 (KSP2) |
 
 ## Cómo correr el proyecto
 
@@ -56,6 +57,8 @@ Desde terminal, con `JAVA_HOME` apuntando al JBR/JDK compatible:
 - [x] Ajustes persistentes de sensibilidad, A4, Hz, notación y tema
 - [x] Estados básicos de permiso, inicialización e interrupción del micrófono
 - [x] Presets Standard, Drop D, Open G, DADGAD y Half Step Down conectados al motor
+- [x] Crear, editar y eliminar presets personalizados almacenados en Room
+- [x] Selección del preset conservada entre aperturas mediante DataStore
 - [ ] FFT avanzada (no disponible; la interfaz la muestra deshabilitada)
 
 ## Verificación manual de la fase Manual Tune + Settings
@@ -86,7 +89,8 @@ flowchart TD
     VM --> SettingsRepo["SettingsRepository"]
     SettingsRepo --> DataStore["Preferences DataStore: ajustes persistentes"]
     VM --> PresetRepo["TuningPresetRepository"]
-    PresetRepo --> Catalog["Catálogo local de presets"]
+    PresetRepo --> Catalog["Catálogo incorporado + Room: presets personalizados"]
+    VM --> Selection["DataStore: ID del preset seleccionado"]
     VM --> Capture["PitchCapture: inicio y parada en cola de trabajo"]
     Capture --> Detector["GuitarPitchDetector: AudioRecord + TarsosDSP YIN"]
     Detector -->|"lecturas y estado del micrófono"| VM
@@ -119,9 +123,10 @@ La pantalla actual y el modo de afinación usan `rememberSaveable`. Al rotar, lo
 ViewModels conservan el objetivo manual y los filtros/selección de presets; el
 registro anterior del micrófono se detiene y la nueva pantalla inicia otra captura.
 La sesión del afinador se reinicia al navegar a otra pantalla, conservando el preset
-activo. Salir de Presets reinicia solo su filtro. La selección dura durante la sesión
-de la aplicación y la rotación; una apertura nueva usa Standard. No se guardan
-muestras de audio en el estado de Android.
+activo. Salir de Presets reinicia solo su filtro. El ID seleccionado se guarda en
+DataStore. Al abrir la app se espera tanto a los presets de Room como a esa
+preferencia antes de restaurar la selección. Si el preset ya no existe, se usa
+Standard y se guarda esa selección. No se guardan muestras de audio en el estado de Android.
 
 El indicador de carga aparece únicamente mientras llega la primera lectura de
 DataStore, sin temporizador ni calibración de micrófono simulada. Los ajustes ya
@@ -170,6 +175,74 @@ micrófono falso; requiere dispositivo o emulador para ejecutarse:
 ```bash
 ./gradlew connectedDebugAndroidTest
 ```
+
+## Presets personalizados
+
+En Presets, **Create Custom** abre un formulario que comienza con Standard:
+E2, A2, D3, G3, B3 y E4. Las etiquetas van de la cuerda 6 (grave y gruesa) a la
+cuerda 1 (aguda y delgada). Cada cuerda tiene selectores de nota y octava; no se
+escriben notas a mano. El nombre es obligatorio y la descripción opcional.
+
+Se quitan espacios sobrantes y se rechazan nombres duplicados sin distinguir
+mayúsculas, incluidos los nombres de presets incorporados. Durante el guardado
+se deshabilitan las acciones para impedir escrituras duplicadas. Si falla,
+el formulario conserva sus datos y permite reintentar.
+
+El nuevo preset aparece en All Presets y Custom. Seleccionarlo configura Home,
+Auto Tune y Manual Tune, con frecuencias calculadas desde sus seis valores MIDI
+y la referencia A4 de Settings. La ventana de frecuencias se amplía para abarcar
+los objetivos personalizados; los presets incorporados conservan su ventana original
+de 60–400 Hz. Como con cualquier afinador, los extremos MIDI y las octavas muy graves
+requieren comprobar la respuesta acústica del micrófono y del algoritmo YIN. Edit y Delete solo están disponibles para los
+personalizados. Delete pide confirmación; borrar el preset seleccionado vuelve
+a Standard. Un error al guardar la selección se muestra con una acción Retry.
+
+Room usa una instancia por proceso creada con el contexto de aplicación, DAO
+suspendidos y Flow para actualizar la lista. Sus IDs se exponen como negativos,
+separados de los positivos del catálogo. Las escrituras se validan en el
+repositorio y un índice único protege los nombres normalizados. La base v1
+exporta su esquema en `app/schemas`; las futuras versiones deben añadir
+migraciones y conservar los esquemas, sin borrado destructivo de datos.
+
+Se conservó Kotlin 2.0.21: [Room 2.7.2 estable](https://developer.android.com/jetpack/androidx/releases/room#2.7.2)
+requiere Kotlin 2.0 o superior y se usa con [KSP 2.0.21-1.0.28](https://github.com/google/ksp/releases/tag/2.0.21-1.0.28),
+con KSP2 habilitado. La compilación comprueba esta combinación sin actualizar el resto del stack.
+
+Pruebas adicionales:
+
+- `CustomPresetValidationTest`: normalización, valores válidos y referencia A4.
+- `CustomPresetsViewModelTest`: carga diferida, restauración, CRUD, confirmación,
+  escrituras repetidas, fallos y reintentos.
+- `CustomPresetStorageTest`: Room real, unicidad, protección de incorporados y
+  persistencia al cerrar/reabrir la base de datos.
+- `PresetSelectionStorageTest`: selección y ajustes al reabrir DataStore.
+- `CustomPresetUiTest`: formulario, duplicados, Auto/Manual, edición y eliminación.
+- `CustomPresetTuningTest`: audio sintetizado de notas graves y agudas, Auto/Manual y A4=432/440.
+- `ResponsiveScreensTest`: editor y lista de presets con texto ampliado y ambos temas.
+
+Resultados de esta implementación: 82 pruebas unitarias y 26 pruebas de dispositivo
+aprobadas, sin fallos ni omisiones, con `assembleDebug` correcto. Las de dispositivo
+incluyen cuatro de restauración, nueve de ciclo de vida del micrófono, seis de
+pantallas, tres de Room, dos de CRUD en UI, una de DataStore y la prueba básica de Android.
+También se creó y seleccionó un preset temporal en la aplicación real, se terminó
+su proceso y se abrió de nuevo: permanecieron tanto el preset como su selección.
+Después se eliminó ese preset y se comprobó el regreso a Standard.
+
+El análisis adicional `lintDebug` no se completó: quedó esperando descargas de
+dependencias y se interrumpió para ejecutar las verificaciones requeridas por separado.
+La respuesta acústica con una guitarra real y los extremos del rango MIDI quedan
+para comprobación manual; las pruebas de audio usan señales sintetizadas.
+
+Verificación manual:
+
+1. Crear un preset con nombre propio, descripción y, por ejemplo, D2 en la cuerda 6.
+2. Guardar, comprobar All Presets y Custom, y seleccionarlo.
+3. Abrir Manual Tune y probar los seis objetivos; abrir Auto Tune y comprobar la detección.
+4. Cerrar completamente y reabrir la aplicación: deben seguir el preset y su selección.
+5. Editarlo y guardar: deben actualizarse sus objetivos sin crear otro preset.
+6. Probar un nombre vacío y otro duplicado con diferentes mayúsculas.
+7. Cancelar Delete y comprobar que permanece; confirmar Delete y verificar Standard.
+8. Repetir con tema claro/oscuro, texto ampliado, rotación y cambio de A4.
 
 ## Equipo
 
