@@ -55,6 +55,52 @@ class ResponsiveScreensTest {
     private var window by mutableStateOf(windows.first())
     private var darkTheme by mutableStateOf(false)
 
+    @Test fun customPresetCardsAndFiltersRemainReachable() {
+        val custom = TuningPreset(-1, "My custom tuning", listOf(38,45,50,55,59,64),
+            "Practice tuning", PresetCategory.CUSTOM)
+        showWindow {
+            TuningPresetsScreen(
+                TuningPresetsUiState(listOf(custom), selectedPreset = custom, isLoading = false),
+                {}, {}, {}, {}, {}, {}
+            )
+        }
+        for (dark in listOf(false, true)) {
+            for (size in windows) {
+                compose.runOnIdle { window = size; darkTheme = dark }
+                assertReadable("Tuning Presets", scroll = false)
+                assertReadable("Create Custom")
+                for (filter in listOf("All Presets", "Guitar", "Custom")) assertReadable(filter)
+                // Anchor the lazy card at its start. Bringing a merged, taller-than-
+                // viewport card into view can otherwise position its title above the window.
+                compose.onNode(hasScrollToIndexAction()).performScrollToIndex(2)
+                assertReadable("My custom tuning — D2 A2 D3 G3 B3 E4", scroll = false)
+                assertReadable("Edit")
+                assertReadable("Delete")
+                assertNavigationVisible()
+                screenshot("custom-presets-$dark-${size.name}")
+            }
+        }
+    }
+
+    @Test fun customEditorRemainsReadableWithSmallWindowsAndLargeFonts() {
+        var draft by mutableStateOf(CustomPresetDraft())
+        showWindow {
+            CustomPresetEditor(draft, false, PresetProblem.NAME_REQUIRED, { draft = it }, {}, {})
+        }
+        for (dark in listOf(false, true)) {
+            for (size in windows) {
+                compose.runOnIdle { window = size; darkTheme = dark }
+                assertReadable("Create custom tuning", scroll = false)
+                assertReadable("String 6 · lowest (thickest)")
+                for (note in listOf("E2", "A2", "D3", "G3", "B3", "E4")) assertReadable(note)
+                assertReadable("String 1 · highest (thinnest)")
+                assertReadable("Save preset")
+                assertReadable("Cancel")
+                screenshot("custom-editor-$dark-${size.name}")
+            }
+        }
+    }
+
     @Test fun tuningModesStayVisibleAndKeepStringSelectionBehavior() {
         var mode by mutableStateOf(TuningMode.AUTO)
         var selected = 0

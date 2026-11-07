@@ -17,6 +17,14 @@ import kotlinx.coroutines.flow.map
 
 private val Context.tunerSettingsDataStore by preferencesDataStore(name = "tuner_settings")
 
+/** A separate key in the existing DataStore, untouched by settings writes. */
+class DataStorePresetSelectionRepository(private val dataStore: DataStore<Preferences>) : PresetSelectionRepository {
+    constructor(context: Context) : this(context.applicationContext.tunerSettingsDataStore)
+    private val key = intPreferencesKey("selected_preset_id")
+    override val selectedPresetId = dataStore.data.map { it[key] ?: 1 }
+    override suspend fun select(id: Int) { dataStore.edit { it[key] = id } }
+}
+
 interface SettingsRepository {
     val settings: Flow<TunerSettings>
     suspend fun saveSettings(settings: TunerSettings)

@@ -19,6 +19,7 @@ internal class GuitarSignalAnalyzer(
 
     private val window = FloatArray(WINDOW_SIZE)
     private val targetStrings = preset.guitarStrings(referencePitch)
+    private val acceptedFrequencies = preset.captureFrequencyRange(referencePitch)
     private var hasPreviousBlock = false
     // Start with the same YIN configuration as the version that detected bass strings.
     private val standardYin = Yin(SAMPLE_RATE.toFloat(), WINDOW_SIZE)
@@ -64,7 +65,7 @@ internal class GuitarSignalAnalyzer(
     private fun detect(detector: Yin): DetectedPitch? {
         val result = detector.getPitch(window)
         val frequency = result.pitch
-        if (!result.isPitched || !frequency.isFinite() || frequency !in 60f..400f ||
+        if (!result.isPitched || !frequency.isFinite() || frequency !in acceptedFrequencies ||
             !result.probability.isFinite() || result.probability < MIN_PROBABILITY
         ) return null
         return convertFrequency(frequency, result.probability, referencePitch, preset.preferFlats)

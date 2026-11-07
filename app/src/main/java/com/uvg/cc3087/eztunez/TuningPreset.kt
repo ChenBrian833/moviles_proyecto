@@ -37,3 +37,13 @@ enum class PresetCategory {
     GUITAR,
     CUSTOM
 }
+
+/** Keep the original guitar window for built-ins; custom octaves must not be
+ * rejected just because their targets fall outside that window. */
+internal fun TuningPreset.captureFrequencyRange(referencePitch: Int): ClosedFloatingPointRange<Float> {
+    if (category != PresetCategory.CUSTOM) return 60f..400f
+    val targets = guitarStrings(referencePitch)
+    val margin = 2.0.pow(2.0 / 12.0).toFloat()
+    return minOf(60f, targets.minOf { it.frequency } / margin)..
+        maxOf(400f, targets.maxOf { it.frequency } * margin)
+}

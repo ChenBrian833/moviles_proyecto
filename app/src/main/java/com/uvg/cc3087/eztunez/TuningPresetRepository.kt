@@ -3,6 +3,10 @@ package com.uvg.cc3087.eztunez
 /** Local catalog shared by the preset picker and the tuning engine. */
 interface TuningPresetRepository {
     fun getPresets(): List<TuningPreset>
+    val presets: kotlinx.coroutines.flow.Flow<List<TuningPreset>>
+        get() = kotlinx.coroutines.flow.flowOf(getPresets())
+    suspend fun saveCustom(draft: CustomPresetDraft): Int = error("Read-only repository")
+    suspend fun deleteCustom(id: Int): Unit = error("Read-only repository")
 }
 
 class BuiltInTuningPresetRepository : TuningPresetRepository {
