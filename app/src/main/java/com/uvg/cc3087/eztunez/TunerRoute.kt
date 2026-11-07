@@ -102,6 +102,10 @@ fun TunerRoute(
         }
     }
 
+    // Capture the gate during composition, just like the effect keys. Registering
+    // the observer can synchronously change resume state before effects run;
+    // reading that newer state inside the effect would start a capture twice.
+    val captureEnabled = hasMicrophonePermission && isResumed
     DisposableEffect(
         viewModel,
         lifecycleOwner,
@@ -109,12 +113,11 @@ fun TunerRoute(
         settings.referencePitch,
         settings.micSensitivity,
         preset,
-        hasMicrophonePermission,
-        isResumed,
+        captureEnabled,
         captureRequestToken
     ) {
         viewModel.configure(mode, settings.referencePitch, preset)
-        if (hasMicrophonePermission && isResumed &&
+        if (captureEnabled &&
             lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
         ) {
             viewModel.setMicrophoneState(MicrophoneState.PERMISSION_GRANTED)
