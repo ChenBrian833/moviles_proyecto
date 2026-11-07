@@ -2,19 +2,27 @@ package com.uvg.cc3087.eztunez
 
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.sin
 
-class GuitarSignalAnalyzerTest {
+@RunWith(Parameterized::class)
+class GuitarSignalAnalyzerTest(private val algorithm: DetectionAlgorithm) {
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters(name = "{0}")
+        fun algorithms() = DetectionAlgorithm.entries.map { arrayOf(it) }
+    }
     private fun tones(
         frequency: Float,
         amplitude: Float,
         fundamental: Double = 1.0,
         secondHarmonic: Double = 0.0
     ): List<DetectedPitch> {
-        val analyzer = GuitarSignalAnalyzer()
+        val analyzer = GuitarSignalAnalyzer(algorithm = algorithm)
         val pitches = mutableListOf<DetectedPitch>()
         repeat(16) { frame ->
             val block = FloatArray(GuitarSignalAnalyzer.HOP_SIZE) { index ->
@@ -56,7 +64,7 @@ class GuitarSignalAnalyzerTest {
     }
 
     @Test fun silenceAndConstantMicrophoneOffsetAreNotNotes() {
-        val analyzer = GuitarSignalAnalyzer()
+        val analyzer = GuitarSignalAnalyzer(algorithm = algorithm)
         repeat(16) {
             assertNull(analyzer.analyze(FloatArray(GuitarSignalAnalyzer.HOP_SIZE) { 0.004f }))
         }
@@ -69,7 +77,7 @@ class GuitarSignalAnalyzerTest {
     }
     @Test fun bassStringsRemainDetectableAsTheSoundDecays() {
         for (frequency in listOf(82.40689f, 110f, 146.83238f)) {
-            val analyzer = GuitarSignalAnalyzer()
+            val analyzer = GuitarSignalAnalyzer(algorithm = algorithm)
             val tracker = TuningTracker(TuningMode.AUTO)
             var accepted = 0
             repeat(26) { frame ->
@@ -94,7 +102,7 @@ class GuitarSignalAnalyzerTest {
     }
 
     @Test fun analysisDoesNotModifyMicrophoneSamples() {
-        val analyzer = GuitarSignalAnalyzer()
+        val analyzer = GuitarSignalAnalyzer(algorithm = algorithm)
         val block = FloatArray(GuitarSignalAnalyzer.HOP_SIZE) { index ->
             (0.002 + 0.004 * sin(2 * PI * 82.40689 * index / GuitarSignalAnalyzer.SAMPLE_RATE)).toFloat()
         }

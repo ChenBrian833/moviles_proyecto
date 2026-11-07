@@ -142,6 +142,23 @@ class SettingsViewModelTest {
         assertEquals(viewModel.settings.value, repository.writes.last())
     }
 
+    @Test fun algorithmSelectionSavesAndRetriesWithoutDroppingOtherSettings() = runTest {
+        val initial = TunerSettings(referencePitch = 432, micSensitivity = 0.4f)
+        repository.settings.emit(initial)
+        runCurrent()
+        repository.failWrites = true
+        viewModel.updateDetectionAlgorithm(DetectionAlgorithm.FFT)
+        runCurrent()
+        val expected = initial.copy(detectionAlgorithm = DetectionAlgorithm.FFT)
+        assertEquals(expected, viewModel.settings.value)
+        assertTrue(viewModel.saveError.value)
+        repository.failWrites = false
+        viewModel.retrySave()
+        runCurrent()
+        assertEquals(expected, repository.writes.last())
+        assertFalse(viewModel.saveError.value)
+    }
+
     private class DelayedSettingsRepository : SettingsRepository {
         override val settings = MutableSharedFlow<TunerSettings>(replay = 1)
         val writes = mutableListOf<TunerSettings>()

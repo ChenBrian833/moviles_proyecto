@@ -21,7 +21,7 @@ class QueuedPitchCaptureFactoryTest {
         val notifications = AtomicInteger()
         val caller = Thread.currentThread()
         val factory = QueuedPitchCaptureFactory(
-            PitchCaptureFactory { _, _, _, _, onState ->
+            PitchCaptureFactory { _, _, _, _, onState, _ ->
                 assertNotSame(caller, Thread.currentThread())
                 object : PitchCapture {
                     override fun start() {
@@ -60,7 +60,7 @@ class QueuedPitchCaptureFactoryTest {
     @Test fun stoppingBeforeTheWorkerRunsSkipsRecorderCreation() {
         val worker = ManualExecutor()
         var creations = 0
-        val factory = QueuedPitchCaptureFactory(PitchCaptureFactory { _, _, _, _, _ ->
+        val factory = QueuedPitchCaptureFactory(PitchCaptureFactory { _, _, _, _, _, _ ->
             creations++
             error("A cancelled start must never open the microphone")
         }, worker)
@@ -79,7 +79,7 @@ class QueuedPitchCaptureFactoryTest {
         var nextId = 0
         var firstPitch: ((DetectedPitch?) -> Unit)? = null
         val received = mutableListOf<DetectedPitch?>()
-        val factory = QueuedPitchCaptureFactory(PitchCaptureFactory { _, _, _, onPitch, _ ->
+        val factory = QueuedPitchCaptureFactory(PitchCaptureFactory { _, _, _, onPitch, _, _ ->
             val id = ++nextId
             if (id == 1) firstPitch = onPitch
             object : PitchCapture {
@@ -113,7 +113,7 @@ class QueuedPitchCaptureFactoryTest {
             var stops = 0
             var lateState: ((MicrophoneState) -> Unit)? = null
             val states = mutableListOf<MicrophoneState>()
-            val factory = QueuedPitchCaptureFactory(PitchCaptureFactory { _, _, _, _, onState ->
+            val factory = QueuedPitchCaptureFactory(PitchCaptureFactory { _, _, _, _, onState, _ ->
                 lateState = onState
                 object : PitchCapture {
                     override fun start() { throw exception }
@@ -131,11 +131,31 @@ class QueuedPitchCaptureFactoryTest {
         }
     }
 
+    @Test fun selectedAlgorithmReachesTheDriverOnTheWorker() {
+        val worker = ManualExecutor()
+        val algorithms = mutableListOf<DetectionAlgorithm>()
+        val factory = QueuedPitchCaptureFactory(PitchCaptureFactory { _, _, _, _, _, algorithm ->
+            algorithms += algorithm
+            object : PitchCapture {
+                override fun start() {}
+                override fun stop() {}
+            }
+        }, worker)
+        val capture = create(factory, algorithm = DetectionAlgorithm.FFT)
+        capture.start()
+        assertTrue(algorithms.isEmpty())
+        worker.runAll()
+        assertEquals(listOf(DetectionAlgorithm.FFT), algorithms)
+        capture.stop()
+        worker.runAll()
+    }
+
     private fun create(
         factory: PitchCaptureFactory,
         onPitch: (DetectedPitch?) -> Unit = {},
-        onState: (MicrophoneState) -> Unit = {}
-    ) = factory.create(DEFAULT_RMS_THRESHOLD, 440, BuiltInTuningPresets.standard, onPitch, onState)
+        onState: (MicrophoneState) -> Unit = {},
+        algorithm: DetectionAlgorithm = DetectionAlgorithm.YIN
+    ) = factory.create(DEFAULT_RMS_THRESHOLD, 440, BuiltInTuningPresets.standard, onPitch, onState, algorithm)
 
     private class ManualExecutor : Executor {
         private val tasks = ArrayDeque<Runnable>()

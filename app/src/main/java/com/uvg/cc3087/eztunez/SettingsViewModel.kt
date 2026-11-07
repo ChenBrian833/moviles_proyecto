@@ -65,6 +65,7 @@ class SettingsViewModel(
     fun updateShowRealTimeHz(value: Boolean) = requestSave { it.copy(showRealTimeHz = value) }
     fun updateNotationSystem(value: NotationSystem) = requestSave { it.copy(notationSystem = value) }
     fun updateDarkTheme(value: Boolean) = requestSave { it.copy(darkTheme = value) }
+    fun updateDetectionAlgorithm(value: DetectionAlgorithm) = requestSave { it.copy(detectionAlgorithm = value) }
 
     fun retrySave() {
         commitMicSensitivity()

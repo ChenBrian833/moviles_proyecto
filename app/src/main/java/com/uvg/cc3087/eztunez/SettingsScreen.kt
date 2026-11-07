@@ -1,6 +1,8 @@
 package com.uvg.cc3087.eztunez
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -39,6 +42,7 @@ fun SettingsScreen(
     onDarkThemeChange: (Boolean) -> Unit,
     onShowRealTimeHzChange: (Boolean) -> Unit,
     onNotationSystemChange: (NotationSystem) -> Unit,
+    onDetectionAlgorithmChange: (DetectionAlgorithm) -> Unit,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
     saveError: Boolean,
@@ -167,26 +171,26 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(IntrinsicSize.Min)
-                        .heightIn(min = 48.dp),
+                        .heightIn(min = 48.dp)
+                        .selectableGroup(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
 
                     SettingsChoiceButton(
-                        text = stringResource(R.string.auto_detect),
-                        selected = true,
+                        text = stringResource(R.string.standard_detection),
+                        selected = settings.detectionAlgorithm == DetectionAlgorithm.YIN,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            // YIN is the only documented and implemented detector.
+                            onDetectionAlgorithmChange(DetectionAlgorithm.YIN)
                         }
                     )
 
                     SettingsChoiceButton(
-                        text = stringResource(R.string.advanced_fft_soon),
-                        selected = false,
-                        enabled = false,
+                        text = stringResource(R.string.advanced_fft),
+                        selected = settings.detectionAlgorithm == DetectionAlgorithm.FFT,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            // Intentionally disabled until an FFT detector is implemented and tested.
+                            onDetectionAlgorithmChange(DetectionAlgorithm.FFT)
                         }
                     )
                 }
@@ -334,7 +338,8 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(IntrinsicSize.Min)
-                        .heightIn(min = 48.dp),
+                        .heightIn(min = 48.dp)
+                        .selectableGroup(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
 
@@ -513,7 +518,9 @@ private fun SettingsChoiceButton(
     Surface(
         modifier = modifier
             .fillMaxHeight()
-            .clickable(
+            .selectable(
+                selected = selected,
+                role = Role.RadioButton,
                 enabled = enabled,
                 onClick = onClick
             ),

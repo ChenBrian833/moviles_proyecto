@@ -27,8 +27,8 @@ class MainActivity : AppCompatActivity() {
         val appContext = applicationContext
         TunerViewModel.Factory(
             captureFactory = QueuedPitchCaptureFactory(
-                PitchCaptureFactory { threshold, reference, preset, onPitch, onState ->
-                    GuitarPitchDetector(appContext, threshold, reference, onPitch, onState, preset)
+                PitchCaptureFactory { threshold, reference, preset, onPitch, onState, algorithm ->
+                    GuitarPitchDetector(appContext, threshold, reference, onPitch, onState, preset, algorithm)
                 }
             ),
             nowMs = android.os.SystemClock::elapsedRealtime

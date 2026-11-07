@@ -28,8 +28,8 @@
     <string name="settings_audio">Audio y sensibilidad</string>
     <string name="mic_sensitivity">Sensibilidad del micrófono</string>
     <string name="detection_algorithm">Algoritmo de detección</string>
-    <string name="auto_detect">Detección automática</string>
-    <string name="advanced_fft_soon">FFT avanzada · Próximamente</string>
+    <string name="standard_detection">Estándar (YIN)</string>
+    <string name="advanced_fft">FFT avanzada</string>
     <string name="reference_pitch">Frecuencia de referencia A4</string>
     <string name="default_concert_pitch">Frecuencia de concierto predeterminada</string>
     <string name="display_options">Opciones de visualización</string>

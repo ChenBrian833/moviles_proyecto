@@ -28,8 +28,8 @@
     <string name="settings_audio">Звук и чувствительность</string>
     <string name="mic_sensitivity">Чувствительность микрофона</string>
     <string name="detection_algorithm">Алгоритм определения</string>
-    <string name="auto_detect">Автоопределение</string>
-    <string name="advanced_fft_soon">Расширенное БПФ · Скоро</string>
+    <string name="standard_detection">Стандартный (YIN)</string>
+    <string name="advanced_fft">Расширенное БПФ</string>
     <string name="reference_pitch">Эталонная частота A4</string>
     <string name="default_concert_pitch">Стандартная концертная частота</string>
     <string name="display_options">Параметры отображения</string>

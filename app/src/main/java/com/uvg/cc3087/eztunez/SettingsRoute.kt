@@ -43,6 +43,7 @@ fun SettingsRoute(
         onDarkThemeChange = viewModel::updateDarkTheme,
         onShowRealTimeHzChange = viewModel::updateShowRealTimeHz,
         onNotationSystemChange = viewModel::updateNotationSystem,
+        onDetectionAlgorithmChange = viewModel::updateDetectionAlgorithm,
         language = language,
         onLanguageChange = { selected ->
             if (selected != language) {

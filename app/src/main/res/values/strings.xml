@@ -30,8 +30,8 @@
     <string name="settings_audio" translatable="true">Audio &amp; Sensitivity</string>
     <string name="mic_sensitivity" translatable="true">Mic Sensitivity</string>
     <string name="detection_algorithm" translatable="true">Detection Algorithm</string>
-    <string name="auto_detect" translatable="true">Auto-detect</string>
-    <string name="advanced_fft_soon" translatable="true">Advanced FFT · Soon</string>
+    <string name="standard_detection" translatable="true">Standard (YIN)</string>
+    <string name="advanced_fft" translatable="true">Advanced FFT</string>
     <string name="reference_pitch" translatable="true">Reference Pitch A4</string>
     <string name="default_concert_pitch" translatable="true">Default concert pitch</string>
     <string name="display_options" translatable="true">Display Options</string>
