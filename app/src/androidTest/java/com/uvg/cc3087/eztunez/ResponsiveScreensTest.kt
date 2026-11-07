@@ -53,6 +53,89 @@ class ResponsiveScreensTest {
         Window("large-text", 320, 480, 2f)
     )
     private var window by mutableStateOf(windows.first())
+    private var darkTheme by mutableStateOf(false)
+
+    @Test fun tuningModesStayVisibleAndKeepStringSelectionBehavior() {
+        var mode by mutableStateOf(TuningMode.AUTO)
+        var selected = 0
+        showWindow {
+            TuneScreen(
+                mode = mode,
+                uiState = TunerUiState(microphone = MicrophoneState.LISTENING),
+                onSelectString = { selected = it },
+                onRetry = {},
+                onOpenSettings = {},
+                onNavigate = {}
+            )
+        }
+        for (dark in listOf(false, true)) {
+            for (tuningMode in TuningMode.entries) {
+                for (size in windows) {
+                    compose.runOnIdle {
+                        darkTheme = dark
+                        mode = tuningMode
+                        window = size
+                        selected = 0
+                    }
+                    val automatic = tuningMode == TuningMode.AUTO
+                    val title = if (automatic) "Auto Tune" else "Manual Tune"
+                    val subtitle = "Acoustic · Standard"
+                    assertReadable(title, scroll = false)
+                    assertReadable(subtitle, scroll = false)
+                    screenshot("mode-$tuningMode-$dark-${size.name}-top")
+                    assertReadable(if (automatic) "Selección automática de cuerda" else "Selecciona una cuerda")
+                    for (string in standardGuitarStrings) {
+                        val button = compose.onAllNodesWithText(string.note).onLast()
+                        button.performScrollTo().assertIsDisplayed()
+                        if (automatic) {
+                            button.assertIsNotEnabled()
+                        } else {
+                            button.assertIsEnabled().performClick()
+                            compose.runOnIdle { assertEquals(string.id, selected) }
+                        }
+                    }
+                    if (automatic) compose.runOnIdle { assertEquals(0, selected) }
+                    // The mode stays visible even after scrolling down to the strings.
+                    compose.onNodeWithText(title).assertIsDisplayed()
+                    compose.onNodeWithText(subtitle).assertIsDisplayed()
+                    assertNavigationVisible()
+                    screenshot("mode-$tuningMode-$dark-${size.name}-strings")
+                }
+            }
+        }
+    }
+
+    @Test fun tuningHeaderShowsTheSelectedPresetInBothModes() {
+        var mode by mutableStateOf(TuningMode.AUTO)
+        var preset by mutableStateOf(BuiltInTuningPresets.standard)
+        showWindow {
+            TuneScreen(
+                mode = mode,
+                preset = preset,
+                uiState = TunerUiState(microphone = MicrophoneState.LISTENING),
+                onSelectString = {},
+                onRetry = {},
+                onOpenSettings = {},
+                onNavigate = {}
+            )
+        }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        for (tuningMode in TuningMode.entries) {
+            for (selectedPreset in BuiltInTuningPresets.all) {
+                for (size in windows) {
+                    compose.runOnIdle {
+                        mode = tuningMode
+                        preset = selectedPreset
+                        window = size
+                    }
+                    val title = if (tuningMode == TuningMode.AUTO) "Auto Tune" else "Manual Tune"
+                    val presetName = selectedPreset.nameRes?.let(context::getString) ?: selectedPreset.name
+                    assertReadable(title, scroll = false)
+                    assertReadable("Acoustic · $presetName", scroll = false)
+                }
+            }
+        }
+    }
 
     @Test fun homeDescriptionsAndActionsRemainReachable() {
         var started: TuningMode? = null
@@ -92,7 +175,8 @@ class ResponsiveScreensTest {
         }
         for ((index, size) in windows.withIndex()) {
             compose.runOnIdle { window = size }
-            assertReadable("Standard · Manual Tune")
+            assertReadable("Manual Tune", scroll = false)
+            assertReadable("Acoustic · Standard", scroll = false)
             compose.onNodeWithText("Retry").performScrollTo().performClick()
             for (string in standardGuitarStrings) {
                 val note = formatNote(string.note, NotationSystem.SOLFEGE)
@@ -126,7 +210,7 @@ class ResponsiveScreensTest {
                 ) {
                     key(window) {
                         Box(Modifier.requiredSize(window.width.dp, window.height.dp).testTag("responsive-window")) {
-                            EztunezTheme(dynamicColor = false, content = content)
+                            EztunezTheme(darkTheme = darkTheme, dynamicColor = false, content = content)
                         }
                     }
                 }
@@ -146,11 +230,11 @@ class ResponsiveScreensTest {
         }
     }
 
-    private fun assertReadable(text: String, lastMatch: Boolean = false) {
+    private fun assertReadable(text: String, lastMatch: Boolean = false, scroll: Boolean = true) {
         val node = if (lastMatch) compose.onAllNodesWithText(text, useUnmergedTree = true).onLast()
         else compose.onNodeWithText(text, useUnmergedTree = true)
         // Headers are outside the scroll container; only scroll descendants need this.
-        if (text != "Standard · Manual Tune") node.performScrollTo()
+        if (scroll) node.performScrollTo()
         node.assertIsDisplayed()
         val layouts = mutableListOf<TextLayoutResult>()
         node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }

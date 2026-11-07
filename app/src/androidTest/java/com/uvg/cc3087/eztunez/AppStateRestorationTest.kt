@@ -82,7 +82,8 @@ class AppStateRestorationTest {
         compose.onNodeWithText("Home").performClick()
         compose.onNodeWithText("Drop D (D A D G B E)").assertIsDisplayed()
         compose.onNodeWithText("Tune").performClick()
-        compose.onNodeWithText("Drop D · Auto Tune").assertIsDisplayed()
+        compose.onNodeWithText("Auto Tune").assertIsDisplayed()
+        compose.onNodeWithText("Acoustic · Drop D").assertIsDisplayed()
         compose.runOnIdle { assertEquals("D2", tuner.uiState.value.tuning.selectedString.note) }
     }
 
@@ -91,7 +92,8 @@ class AppStateRestorationTest {
         compose.onNodeWithText("Manual Tune").performClick()
         compose.runOnIdle { tuner.selectString(6) }
         restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithText("Standard · Manual Tune").assertIsDisplayed()
+        compose.onNodeWithText("Manual Tune").assertIsDisplayed()
+        compose.onNodeWithText("Acoustic · Standard").assertIsDisplayed()
         compose.onNodeWithText("Loading settings…").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(6, tuner.uiState.value.tuning.selectedString.id)
