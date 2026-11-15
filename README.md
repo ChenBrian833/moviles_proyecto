@@ -30,7 +30,7 @@ presentaciones.
 | Sistema operativo | Android (minSdk 28, compileSdk 36) |
 | Lenguaje | Kotlin |
 | UI | Jetpack Compose |
-| Detección | AudioRecord + TarsosDSP YIN |
+| Detección | AudioRecord + TarsosDSP YIN / FFT-YIN |
 | Preferencias | Preferences DataStore |
 | Presets personalizados | Room 2.7.2 + KSP 2.0.21-1.0.28 (KSP2) |
 
@@ -59,7 +59,7 @@ Desde terminal, con `JAVA_HOME` apuntando al JBR/JDK compatible:
 - [x] Presets Standard, Drop D, Open G, DADGAD y Half Step Down conectados al motor
 - [x] Crear, editar y eliminar presets personalizados almacenados en Room
 - [x] Selección del preset conservada entre aperturas mediante DataStore
-- [ ] FFT avanzada (no disponible; la interfaz la muestra deshabilitada)
+- [x] FFT avanzada seleccionable y persistente en Settings
 
 ## Verificación manual de la fase Manual Tune + Settings
 
@@ -73,6 +73,8 @@ En un teléfono físico con una fuente de sonido adecuada:
 6. Ocultar Hz, cambiar entre Standard/Solfège y alternar el tema.
 7. Cerrar por completo y reabrir la app para confirmar la persistencia.
 8. Denegar el permiso, reintentar y probar el acceso a ajustes cuando quede bloqueado.
+9. Alternar Standard (YIN) y Advanced FFT en Settings y comparar ambos con una
+   fuente de audio conocida, incluyendo cuerdas graves y sonidos suaves.
 
 La compilación automatizada no sustituye esta verificación acústica en hardware real.
 
@@ -92,7 +94,7 @@ flowchart TD
     PresetRepo --> Catalog["Catálogo incorporado + Room: presets personalizados"]
     VM --> Selection["DataStore: ID del preset seleccionado"]
     VM --> Capture["PitchCapture: inicio y parada en cola de trabajo"]
-    Capture --> Detector["GuitarPitchDetector: AudioRecord + TarsosDSP YIN"]
+    Capture --> Detector["GuitarPitchDetector: AudioRecord + TarsosDSP YIN / FFT-YIN"]
     Detector -->|"lecturas y estado del micrófono"| VM
     VM --> Tracker["TuningTracker: selección de cuerda y suavizado"]
 ```
@@ -105,8 +107,11 @@ con Android; `TunerRoute` controla permisos y el ciclo de vida del micrófono.
 - `TunerRoute` conecta permisos, ajustes de Android y duración de la pantalla con
   `TunerViewModel`. `TuneScreen` recibe estado de solo lectura y callbacks.
 - `TunerViewModel` coordina `TuningTracker` y la interfaz `PitchCapture` mediante
-  `StateFlow`. `GuitarPitchDetector` implementa la captura; YIN y sus umbrales no
-  cambian. Los callbacks de capturas anteriores se descartan al detener o reintentar.
+  `StateFlow`. `GuitarPitchDetector` implementa la captura. El modo estándar usa
+  YIN y conserva sus umbrales; FFT avanzada usa `FftYinDetector` y la FFT de
+  TarsosDSP para calcular una diferencia normalizada a partir de la autocorrelación.
+  Los callbacks de capturas anteriores se
+  descartan al detener o reintentar.
 - `QueuedPitchCaptureFactory` ejecuta la creación, inicio y parada del driver en
   una cola de trabajo compartida. La UI solicita la parada y limpia su lectura sin
   esperar operaciones nativas ni `join`. La siguiente captura espera a que termine
@@ -147,10 +152,25 @@ Los cambios pendientes se agrupan y guardan en orden mediante una edición atóm
 de DataStore, omitiendo valores sin cambios. Si falla una escritura, Settings
 muestra un error persistente con reintento; las opciones siguen activas en la sesión.
 
+En Settings → Detection Algorithm se elige Standard (YIN), el valor predeterminado,
+o Advanced FFT. Este último calcula la autocorrelación mediante la FFT de TarsosDSP,
+con relleno de ceros, normalización por solapamiento e interpolación del período
+para estimar la frecuencia; no elige simplemente el bin de mayor amplitud. Ambos modos usan
+44 100 Hz, ventanas de 4096 muestras con salto de 2048, los mismos controles de
+sensibilidad y confianza, el preset activo y la referencia A4. La selección se
+guarda en DataStore. Si el algoritmo cambia durante una sesión activa, se reemplaza
+la captura y se limpia su lectura, conservando la cuerda manual cuando el resto
+de la configuración no cambia.
+
 Los textos visibles, mensajes de micrófono, etiquetas accesibles y descripciones de
 presets integrados se definen en `app/src/main/res/values/strings.xml`. Los valores
 variables usan marcadores indexados; los presets personalizados mantienen su texto.
 La notación musical y las claves persistidas no se traducen.
+La app incluye inglés, español y ruso. En Ajustes → Idioma se puede elegir un
+idioma o seguir el del sistema. AppCompat y las preferencias de idioma de Android
+conservan la elección; cambiar de idioma recrea la Activity manteniendo el estado
+guardado y los ViewModels. Los nombres y descripciones de presets personalizados
+se conservan tal como se escribieron.
 
 Home y Tune usan contenido desplazable con ancho máximo centrado. Sus encabezados,
 tarjetas y controles crecen con el texto; las cuerdas se distribuyen en varias filas
@@ -193,7 +213,7 @@ Auto Tune y Manual Tune, con frecuencias calculadas desde sus seis valores MIDI
 y la referencia A4 de Settings. La ventana de frecuencias se amplía para abarcar
 los objetivos personalizados; los presets incorporados conservan su ventana original
 de 60–400 Hz. Como con cualquier afinador, los extremos MIDI y las octavas muy graves
-requieren comprobar la respuesta acústica del micrófono y del algoritmo YIN. Edit y Delete solo están disponibles para los
+requieren comprobar la respuesta acústica del micrófono con YIN y FFT. Edit y Delete solo están disponibles para los
 personalizados. Delete pide confirmación; borrar el preset seleccionado vuelve
 a Standard. Un error al guardar la selección se muestra con una acción Retry.
 

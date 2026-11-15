@@ -112,6 +112,7 @@ fun TunerRoute(
         mode,
         settings.referencePitch,
         settings.micSensitivity,
+        settings.detectionAlgorithm,
         preset,
         captureEnabled,
         captureRequestToken
@@ -121,7 +122,7 @@ fun TunerRoute(
             lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
         ) {
             viewModel.setMicrophoneState(MicrophoneState.PERMISSION_GRANTED)
-            viewModel.startListening(settings.micSensitivity)
+            viewModel.startListening(settings.micSensitivity, settings.detectionAlgorithm)
         }
         onDispose { viewModel.stopListening() }
     }

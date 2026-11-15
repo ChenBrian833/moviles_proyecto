@@ -3,6 +3,10 @@ package com.uvg.cc3087.eztunez
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -15,6 +19,9 @@ fun SettingsRoute(
     onNavigate: (AppScreen) -> Unit
 ) {
     val saveError by viewModel.saveError.collectAsStateWithLifecycle()
+    val language = remember(LocalConfiguration.current) {
+        AppLanguage.fromTag(AppCompatDelegate.getApplicationLocales()[0]?.toLanguageTag())
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(viewModel, lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -36,6 +43,14 @@ fun SettingsRoute(
         onDarkThemeChange = viewModel::updateDarkTheme,
         onShowRealTimeHzChange = viewModel::updateShowRealTimeHz,
         onNotationSystemChange = viewModel::updateNotationSystem,
+        onDetectionAlgorithmChange = viewModel::updateDetectionAlgorithm,
+        language = language,
+        onLanguageChange = { selected ->
+            if (selected != language) {
+                viewModel.commitMicSensitivity()
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(selected.tag))
+            }
+        },
         saveError = saveError,
         onRetrySave = viewModel::retrySave,
         onNavigate = onNavigate

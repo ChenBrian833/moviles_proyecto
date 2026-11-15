@@ -42,7 +42,7 @@ class AppStateRestorationTest {
             tuner = ViewModelProvider(
                 store,
                 TunerViewModel.Factory(
-                    PitchCaptureFactory { _, _, _, _, onState ->
+                    PitchCaptureFactory { _, _, _, _, onState, _ ->
                         FakeCapture(onState).also(captures::add)
                     },
                     SystemClock::elapsedRealtime

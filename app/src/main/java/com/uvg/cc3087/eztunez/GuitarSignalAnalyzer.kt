@@ -1,14 +1,16 @@
 package com.uvg.cc3087.eztunez
 
 import be.tarsos.dsp.pitch.Yin
+import be.tarsos.dsp.pitch.PitchDetector as TarsosPitchDetector
 import kotlin.math.abs
 import kotlin.math.sqrt
 
-/** Tarsos YIN on consecutive microphone samples, without a mandatory audio filter. */
+/** Standard or FFT-accelerated YIN on the same consecutive microphone samples. */
 internal class GuitarSignalAnalyzer(
     private val rmsThreshold: Float = DEFAULT_RMS_THRESHOLD,
     private val referencePitch: Int = DEFAULT_REFERENCE_PITCH,
-    private val preset: TuningPreset = BuiltInTuningPresets.standard
+    private val preset: TuningPreset = BuiltInTuningPresets.standard,
+    private val algorithm: DetectionAlgorithm = DetectionAlgorithm.YIN
 ) {
     companion object {
         const val SAMPLE_RATE = 44100
@@ -21,10 +23,17 @@ internal class GuitarSignalAnalyzer(
     private val targetStrings = preset.guitarStrings(referencePitch)
     private val acceptedFrequencies = preset.captureFrequencyRange(referencePitch)
     private var hasPreviousBlock = false
-    // Start with the same YIN configuration as the version that detected bass strings.
-    private val standardYin = Yin(SAMPLE_RATE.toFloat(), WINDOW_SIZE)
-    private val preciseYin = Yin(SAMPLE_RATE.toFloat(), WINDOW_SIZE, 0.10)
-    private val tolerantYin = Yin(SAMPLE_RATE.toFloat(), WINDOW_SIZE, 0.25)
+    // Allocate only the chosen backend, once per capture. Both use the established
+    // thresholds, confidence checks, and sub-sample period interpolation.
+    private val standardDetector = detector()
+    private val preciseDetector = detector(0.10)
+    private val tolerantDetector = detector(0.25)
+
+    private fun detector(threshold: Double? = null): TarsosPitchDetector = when (algorithm) {
+        DetectionAlgorithm.YIN -> if (threshold == null) Yin(SAMPLE_RATE.toFloat(), WINDOW_SIZE)
+            else Yin(SAMPLE_RATE.toFloat(), WINDOW_SIZE, threshold)
+        DetectionAlgorithm.FFT -> FftYinDetector(SAMPLE_RATE.toFloat(), WINDOW_SIZE, threshold ?: 0.20)
+    }
 
     fun analyze(block: FloatArray): DetectedPitch? {
         require(block.size == HOP_SIZE)
@@ -44,12 +53,12 @@ internal class GuitarSignalAnalyzer(
         }
         if (sqrt(energy / WINDOW_SIZE) < rmsThreshold.coerceAtLeast(0f)) return null
 
-        val primary = detect(standardYin)
+        val primary = detect(standardDetector)
         if (primary != null) {
             // Accept normal readings immediately. Only investigate a possible harmonic
             // when the detected pitch is far from every open-string reference.
             if (distanceToOpenString(primary.frequency) > 100f) {
-                val precise = detect(preciseYin)
+                val precise = detect(preciseDetector)
                 if (precise != null &&
                     abs(centsFrom(primary.frequency, precise.frequency) - 1200f) < 35f &&
                     distanceToOpenString(precise.frequency) + 80f <
@@ -59,10 +68,10 @@ internal class GuitarSignalAnalyzer(
             return primary
         }
         // A pitched result outside the guitar range must not block a usable fallback.
-        return detect(preciseYin) ?: detect(tolerantYin)
+        return detect(preciseDetector) ?: detect(tolerantDetector)
     }
 
-    private fun detect(detector: Yin): DetectedPitch? {
+    private fun detect(detector: TarsosPitchDetector): DetectedPitch? {
         val result = detector.getPitch(window)
         val frequency = result.pitch
         if (!result.isPitched || !frequency.isFinite() || frequency !in acceptedFrequencies ||

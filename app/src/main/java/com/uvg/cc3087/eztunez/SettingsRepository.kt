@@ -54,6 +54,7 @@ class DataStoreSettingsRepository(
             it[Keys.SHOW_REAL_TIME_HZ] = normalized.showRealTimeHz
             it[Keys.NOTATION_SYSTEM] = normalized.notationSystem.name
             it[Keys.DARK_THEME] = normalized.darkTheme
+            it[Keys.DETECTION_ALGORITHM] = normalized.detectionAlgorithm.name
         }
     }
 
@@ -83,6 +84,7 @@ class DataStoreSettingsRepository(
         val SHOW_REAL_TIME_HZ = booleanPreferencesKey("show_real_time_hz")
         val NOTATION_SYSTEM = stringPreferencesKey("notation_system")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
+        val DETECTION_ALGORITHM = stringPreferencesKey("detection_algorithm")
     }
 }
 
@@ -97,6 +99,9 @@ internal fun settingsFromPreferences(preferences: Preferences): TunerSettings {
             ?: DEFAULT_REFERENCE_PITCH,
         showRealTimeHz = preferences[DataStoreSettingsRepository.Keys.SHOW_REAL_TIME_HZ] ?: true,
         notationSystem = notation,
-        darkTheme = preferences[DataStoreSettingsRepository.Keys.DARK_THEME] ?: true
+        darkTheme = preferences[DataStoreSettingsRepository.Keys.DARK_THEME] ?: true,
+        detectionAlgorithm = preferences[DataStoreSettingsRepository.Keys.DETECTION_ALGORITHM]
+            ?.let { stored -> DetectionAlgorithm.entries.firstOrNull { it.name == stored } }
+            ?: DetectionAlgorithm.YIN
     ).normalized()
 }

@@ -51,7 +51,7 @@ data class TuningState(
     val isInTune: Boolean get() = pitch != null && abs(cents) <= 5f
 }
 
-/** Filters Tarsos readings only; Tarsos YIN remains the sole pitch detector. */
+/** Filters pitch estimates from either Tarsos detector without changing the audio. */
 class TuningTracker(
     private val mode: TuningMode,
     referencePitch: Int = DEFAULT_REFERENCE_PITCH,

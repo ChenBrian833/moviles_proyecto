@@ -4,13 +4,15 @@ import kotlin.math.roundToInt
 import java.util.Locale
 
 enum class NotationSystem { STANDARD, SOLFEGE }
+enum class DetectionAlgorithm { YIN, FFT }
 
 data class TunerSettings(
     val micSensitivity: Float = DEFAULT_MIC_SENSITIVITY,
     val referencePitch: Int = DEFAULT_REFERENCE_PITCH,
     val showRealTimeHz: Boolean = true,
     val notationSystem: NotationSystem = NotationSystem.STANDARD,
-    val darkTheme: Boolean = true
+    val darkTheme: Boolean = true,
+    val detectionAlgorithm: DetectionAlgorithm = DetectionAlgorithm.YIN
 )
 
 const val DEFAULT_MIC_SENSITIVITY = 0.78f

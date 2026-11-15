@@ -51,7 +51,7 @@ class TunerViewModel(
     }
 
     /** Called only after the route has verified microphone permission. */
-    fun startListening(micSensitivity: Float) {
+    fun startListening(micSensitivity: Float, algorithm: DetectionAlgorithm = DetectionAlgorithm.YIN) {
         val currentTracker = tracker ?: return
         stopListening()
         val generation = captureGeneration
@@ -59,6 +59,7 @@ class TunerViewModel(
             rmsThreshold = sensitivityToRmsThreshold(micSensitivity),
             referencePitch = referencePitch,
             preset = preset,
+            algorithm = algorithm,
             onPitchDetected = { pitch ->
                 viewModelScope.launch {
                     if (generation == captureGeneration) {

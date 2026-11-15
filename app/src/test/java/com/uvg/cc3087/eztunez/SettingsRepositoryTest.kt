@@ -13,7 +13,8 @@ class SettingsRepositoryTest {
             DataStoreSettingsRepository.Keys.REFERENCE_PITCH to 432,
             DataStoreSettingsRepository.Keys.SHOW_REAL_TIME_HZ to false,
             DataStoreSettingsRepository.Keys.NOTATION_SYSTEM to NotationSystem.SOLFEGE.name,
-            DataStoreSettingsRepository.Keys.DARK_THEME to false
+            DataStoreSettingsRepository.Keys.DARK_THEME to false,
+            DataStoreSettingsRepository.Keys.DETECTION_ALGORITHM to DetectionAlgorithm.FFT.name
         )
 
         val settings = settingsFromPreferences(preferences)
@@ -22,6 +23,7 @@ class SettingsRepositoryTest {
         assertFalse(settings.showRealTimeHz)
         assertEquals(NotationSystem.SOLFEGE, settings.notationSystem)
         assertFalse(settings.darkTheme)
+        assertEquals(DetectionAlgorithm.FFT, settings.detectionAlgorithm)
     }
 
     @Test fun missingAndInvalidStoredValuesUseSafeDefaults() {
@@ -30,7 +32,8 @@ class SettingsRepositoryTest {
             preferencesOf(
                 DataStoreSettingsRepository.Keys.MIC_SENSITIVITY to 8f,
                 DataStoreSettingsRepository.Keys.REFERENCE_PITCH to 1,
-                DataStoreSettingsRepository.Keys.NOTATION_SYSTEM to "UNKNOWN"
+                DataStoreSettingsRepository.Keys.NOTATION_SYSTEM to "UNKNOWN",
+                DataStoreSettingsRepository.Keys.DETECTION_ALGORITHM to "UNKNOWN"
             )
         )
         assertEquals(1f, invalid.micSensitivity, 0f)
@@ -38,5 +41,6 @@ class SettingsRepositoryTest {
         assertEquals(NotationSystem.STANDARD, invalid.notationSystem)
         assertTrue(invalid.showRealTimeHz)
         assertTrue(invalid.darkTheme)
+        assertEquals(DetectionAlgorithm.YIN, invalid.detectionAlgorithm)
     }
 }

@@ -27,8 +27,8 @@ class TunerViewModelTest {
         viewModel = ViewModelProvider(
             store,
             TunerViewModel.Factory(
-                PitchCaptureFactory { threshold, reference, preset, onPitch, onState ->
-                    FakeCapture(threshold, reference, onPitch, onState, preset).also(captures::add)
+                PitchCaptureFactory { threshold, reference, preset, onPitch, onState, algorithm ->
+                    FakeCapture(threshold, reference, onPitch, onState, preset, algorithm).also(captures::add)
                 },
                 nowMs = { now }
             )
@@ -322,6 +322,25 @@ class TunerViewModelTest {
         }
     }
 
+    @Test fun changingAlgorithmReplacesCaptureWithoutLosingManualTarget() {
+        start(TuningMode.MANUAL)
+        viewModel.selectString(4)
+        val previous = captures.single()
+        viewModel.stopListening()
+        viewModel.configure(TuningMode.MANUAL, 440)
+        viewModel.startListening(DEFAULT_MIC_SENSITIVITY, DetectionAlgorithm.FFT)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(DetectionAlgorithm.YIN, previous.algorithm)
+        assertEquals(DetectionAlgorithm.FFT, captures.last().algorithm)
+        assertEquals(1, previous.stops)
+        assertEquals(4, viewModel.uiState.value.tuning.selectedString.id)
+        previous.onPitch(convertFrequency(110f, 0.99f))
+        dispatcher.scheduler.runCurrent()
+        assertNull(viewModel.uiState.value.tuning.pitch)
+        play(195.99772f)
+        assertTrue(viewModel.uiState.value.tuning.isInTune)
+    }
+
     private fun start(mode: TuningMode) {
         viewModel.configure(mode, 440)
         viewModel.startListening(DEFAULT_MIC_SENSITIVITY)
@@ -341,7 +360,8 @@ class TunerViewModelTest {
         val reference: Int,
         val onPitch: (DetectedPitch?) -> Unit,
         val onState: (MicrophoneState) -> Unit,
-        val preset: TuningPreset
+        val preset: TuningPreset,
+        val algorithm: DetectionAlgorithm
     ) : PitchCapture {
         var starts = 0
         var stops = 0

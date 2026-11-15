@@ -14,7 +14,8 @@ class QueuedPitchCaptureFactory(
         referencePitch: Int,
         preset: TuningPreset,
         onPitchDetected: (DetectedPitch?) -> Unit,
-        onStateChanged: (MicrophoneState) -> Unit
+        onStateChanged: (MicrophoneState) -> Unit,
+        algorithm: DetectionAlgorithm
     ): PitchCapture = object : PitchCapture {
         private val started = AtomicBoolean(false)
         private val stopped = AtomicBoolean(false)
@@ -29,7 +30,8 @@ class QueuedPitchCaptureFactory(
                     delegate = delegateFactory.create(
                         rmsThreshold, referencePitch, preset,
                         onPitchDetected = { if (!stopped.get()) onPitchDetected(it) },
-                        onStateChanged = { if (!stopped.get()) onStateChanged(it) }
+                        onStateChanged = { if (!stopped.get()) onStateChanged(it) },
+                        algorithm = algorithm
                     )
                     if (!stopped.get()) delegate?.start()
                 } catch (_: SecurityException) {
