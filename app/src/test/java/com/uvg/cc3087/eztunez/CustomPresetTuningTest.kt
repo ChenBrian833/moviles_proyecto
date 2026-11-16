@@ -8,7 +8,7 @@ import org.junit.Test
 class CustomPresetTuningTest {
     @Test fun customLowAndHighOctavesReachAutoAndManualThroughTheRealAnalyzer() {
         val preset = TuningPreset(-1, "Extended", listOf(31,45,50,55,59,69), category = PresetCategory.CUSTOM)
-        for (mode in TuningMode.entries) {
+        for (mode in listOf(TuningMode.AUTO, TuningMode.MANUAL)) {
             for (reference in listOf(432, 440)) {
                 for (target in listOf(preset.guitarStrings(reference).first(), preset.guitarStrings(reference).last())) {
                     val analyzer = GuitarSignalAnalyzer(DEFAULT_RMS_THRESHOLD, reference, preset)

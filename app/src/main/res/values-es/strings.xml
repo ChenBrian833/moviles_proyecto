@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="loading_settings">Cargando ajustes…</string>
+    <string name="loading_settings">Cargando…</string>
     <string name="settings_save_error">No se pudieron guardar los ajustes. Tus cambios siguen activos, pero podrían perderse al cerrar la app.</string>
     <string name="retry_save">Reintentar guardado</string>
     <string name="tuning_strings_auto">Selección automática de cuerdas</string>
@@ -21,7 +21,6 @@
     <string name="mode_manual_description">Selecciona y afina cada cuerda</string>
     <string name="mode_chromatic">Afinador cromático</string>
     <string name="mode_chromatic_description">Afina cualquiera de las 12 notas cromáticas</string>
-    <string name="chromatic_coming_soon">Afinador cromático próximamente</string>
     <string name="metronome">Metrónomo</string>
     <string name="metronome_description">Mantén el ritmo con pulsos visuales y sonoros</string>
     <string name="metronome_coming_soon">Metrónomo próximamente</string>
@@ -107,4 +106,6 @@
     <string name="app_language">Idioma</string>
     <string name="language_summary">Usa el idioma del dispositivo o elige uno para EzTunez.</string>
     <string name="language_system">Predeterminado del sistema</string>
+    <string name="chromatic_subtitle">Todas las notas • Independiente del ajuste preestablecido</string>
+    <string name="play_note">Toca una nota</string>
 </resources>

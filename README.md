@@ -59,6 +59,7 @@ Desde terminal, con `JAVA_HOME` apuntando al JBR/JDK compatible:
 - [x] Presets Standard, Drop D, Open G, DADGAD y Half Step Down conectados al motor
 - [x] Crear, editar y eliminar presets personalizados almacenados en Room
 - [x] Selección del preset conservada entre aperturas mediante DataStore
+- [x] Afinador cromático independiente de presets (YIN y FFT), aproximadamente C1–C7
 - [x] FFT avanzada seleccionable y persistente en Settings
 
 ## Verificación manual de la fase Manual Tune + Settings
@@ -96,7 +97,8 @@ flowchart TD
     VM --> Capture["PitchCapture: inicio y parada en cola de trabajo"]
     Capture --> Detector["GuitarPitchDetector: AudioRecord + TarsosDSP YIN / FFT-YIN"]
     Detector -->|"lecturas y estado del micrófono"| VM
-    VM --> Tracker["TuningTracker: selección de cuerda y suavizado"]
+    VM --> Tracker["TuningTracker: selección de objetivo y suavizado"]
+    Tracker --> Chromatic["ChromaticScale: semitono más cercano y calibración A4"]
 ```
 
 `MainActivity` crea y conecta estas dependencias. Las Routes gestionan la conexión
@@ -133,8 +135,9 @@ DataStore. Al abrir la app se espera tanto a los presets de Room como a esa
 preferencia antes de restaurar la selección. Si el preset ya no existe, se usa
 Standard y se guarda esa selección. No se guardan muestras de audio en el estado de Android.
 
-El indicador de carga aparece únicamente mientras llega la primera lectura de
-DataStore, sin temporizador ni calibración de micrófono simulada. Los ajustes ya
+El indicador de carga cubre la primera lectura de ajustes y la restauración de
+presets de Room y su selección guardada. Se muestra una única pantalla de carga,
+sin temporizador ni calibración de micrófono simulada. Los ajustes ya
 cargados se conservan durante la recreación. La captura solo se inicia con permiso
 y con el afinador en estado `RESUMED`. Al pausar, bloquear o dejar la aplicación se
 solicita liberar el micrófono en segundo plano; al volver se comprueba el permiso y se inicia una nueva captura
@@ -274,3 +277,24 @@ Verificación manual:
 
 Proyecto para el curso *Panorama del desarrollo móvil 2026*, Universidad del
 Valle de Guatemala.
+
+## Afinación cromática
+
+Home → Chromatic abre el afinador de todas las notas. El objetivo es el semitono
+más cercano a la frecuencia suavizada, con octava y cents calculados usando el A4
+configurado. No depende del preset seleccionado y no muestra botones de cuerdas.
+Conserva sensibilidad, notación, Hz, permisos y ciclo de vida del afinador existente.
+El metrónomo está oculto de Home hasta que se implemente.
+
+El modo se transmite explícitamente desde TunerViewModel hasta la captura mediante
+PitchCaptureFactory. En modo cromático, GuitarSignalAnalyzer acepta 30–2200 Hz
+(aproximadamente C1–C7) y omite la corrección de armónicos basada en cuerdas abiertas.
+ChromaticScale contiene la selección de nota como lógica de dominio sin Android;
+TuningTracker conserva la validación, confirmación y suavizado comunes. La UI solo
+representa el StateFlow y envía acciones, sin realizar detección ni cálculos musicales.
+
+Las pruebas de dominio comprueban semitonos, octavas, calibración, cents positivos y
+negativos, cambios de nota, independencia del preset, rechazo de lecturas inválidas y
+caducidad de la señal. Las pruebas de audio sintetizan PCM16 para ambos detectores
+por debajo y por encima del rango de guitarra. Verificar también con una fuente de
+audio conocida en un teléfono físico; el rango útil depende del micrófono y del ruido.

@@ -10,7 +10,8 @@ internal class GuitarSignalAnalyzer(
     private val rmsThreshold: Float = DEFAULT_RMS_THRESHOLD,
     private val referencePitch: Int = DEFAULT_REFERENCE_PITCH,
     private val preset: TuningPreset = BuiltInTuningPresets.standard,
-    private val algorithm: DetectionAlgorithm = DetectionAlgorithm.YIN
+    private val algorithm: DetectionAlgorithm = DetectionAlgorithm.YIN,
+    private val mode: TuningMode = TuningMode.AUTO
 ) {
     companion object {
         const val SAMPLE_RATE = 44100
@@ -21,7 +22,8 @@ internal class GuitarSignalAnalyzer(
 
     private val window = FloatArray(WINDOW_SIZE)
     private val targetStrings = preset.guitarStrings(referencePitch)
-    private val acceptedFrequencies = preset.captureFrequencyRange(referencePitch)
+    private val acceptedFrequencies = if (mode == TuningMode.CHROMATIC)
+        ChromaticScale.frequencyRange else preset.captureFrequencyRange(referencePitch)
     private var hasPreviousBlock = false
     // Allocate only the chosen backend, once per capture. Both use the established
     // thresholds, confidence checks, and sub-sample period interpolation.
@@ -57,7 +59,7 @@ internal class GuitarSignalAnalyzer(
         if (primary != null) {
             // Accept normal readings immediately. Only investigate a possible harmonic
             // when the detected pitch is far from every open-string reference.
-            if (distanceToOpenString(primary.frequency) > 100f) {
+            if (mode != TuningMode.CHROMATIC && distanceToOpenString(primary.frequency) > 100f) {
                 val precise = detect(preciseDetector)
                 if (precise != null &&
                     abs(centsFrom(primary.frequency, precise.frequency) - 1200f) < 35f &&
@@ -77,7 +79,7 @@ internal class GuitarSignalAnalyzer(
         if (!result.isPitched || !frequency.isFinite() || frequency !in acceptedFrequencies ||
             !result.probability.isFinite() || result.probability < MIN_PROBABILITY
         ) return null
-        return convertFrequency(frequency, result.probability, referencePitch, preset.preferFlats)
+        return convertFrequency(frequency, result.probability, referencePitch, mode != TuningMode.CHROMATIC && preset.preferFlats)
     }
 
     private fun distanceToOpenString(frequency: Float): Float =

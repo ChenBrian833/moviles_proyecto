@@ -42,7 +42,7 @@ class AppStateRestorationTest {
             tuner = ViewModelProvider(
                 store,
                 TunerViewModel.Factory(
-                    PitchCaptureFactory { _, _, _, _, onState, _ ->
+                    PitchCaptureFactory { _, _, _, _, onState, _, _ ->
                         FakeCapture(onState).also(captures::add)
                     },
                     SystemClock::elapsedRealtime
@@ -64,7 +64,7 @@ class AppStateRestorationTest {
         compose.onNodeWithText("Audio & Sensitivity").assertIsDisplayed()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Audio & Sensitivity").assertIsDisplayed()
-        compose.onNodeWithText("Loading settings…").assertDoesNotExist()
+        compose.onNodeWithText("Loading…").assertDoesNotExist()
     }
 
     @Test fun presetDestinationFilterAndSelectionSurviveRestoration() {
@@ -94,7 +94,7 @@ class AppStateRestorationTest {
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Manual Tune").assertIsDisplayed()
         compose.onNodeWithText("Acoustic · Standard").assertIsDisplayed()
-        compose.onNodeWithText("Loading settings…").assertDoesNotExist()
+        compose.onNodeWithText("Loading…").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(6, tuner.uiState.value.tuning.selectedString.id)
             assertEquals(2, captures.size)

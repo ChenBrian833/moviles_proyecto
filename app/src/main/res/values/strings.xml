@@ -1,5 +1,5 @@
 <resources>
-    <string name="loading_settings" translatable="true">Loading settings…</string>
+    <string name="loading_settings" translatable="true">Loading…</string>
     <string name="settings_save_error" translatable="true">Could not save your settings. Your choices are still active, but may be lost when the app closes.</string>
     <string name="retry_save" translatable="true">Retry save</string>
     <string name="current_tuning" translatable="false">%1$s (%2$s)</string>
@@ -23,7 +23,6 @@
     <string name="mode_manual_description" translatable="true">Select and tune strings individually</string>
     <string name="mode_chromatic" translatable="true">Chromatic Tuner</string>
     <string name="mode_chromatic_description" translatable="true">Tune to any of the 12 chromatic pitches</string>
-    <string name="chromatic_coming_soon" translatable="true">Chromatic Tuner coming soon</string>
     <string name="metronome" translatable="true">Metronome</string>
     <string name="metronome_description" translatable="true">Keep rhythm with visual and audio beats</string>
     <string name="metronome_coming_soon" translatable="true">Metronome coming soon</string>
@@ -129,4 +128,6 @@
     <string name="language_english" translatable="false">English</string>
     <string name="language_spanish" translatable="false">Español</string>
     <string name="language_russian" translatable="false">Русский</string>
+    <string name="chromatic_subtitle" translatable="true">All notes • Independent of tuning presets</string>
+    <string name="play_note" translatable="true">Play a note</string>
 </resources>

@@ -150,7 +150,7 @@ class TunerRouteLifecycleTest {
             tuner = ViewModelProvider(
                 store,
                 TunerViewModel.Factory(
-                    PitchCaptureFactory { _, _, _, _, onState, _ ->
+                    PitchCaptureFactory { _, _, _, _, onState, _, _ ->
                         FakeCapture(onState).also(captures::add)
                     },
                     nowMs = { 0L }

@@ -60,6 +60,7 @@ class TunerViewModel(
             referencePitch = referencePitch,
             preset = preset,
             algorithm = algorithm,
+            mode = mode,
             onPitchDetected = { pitch ->
                 viewModelScope.launch {
                     if (generation == captureGeneration) {

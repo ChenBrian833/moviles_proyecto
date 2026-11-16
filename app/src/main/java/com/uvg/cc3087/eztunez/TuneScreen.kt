@@ -67,9 +67,14 @@ fun TuneScreen(
         topBar = {
             ScreenHeader(
                 title = stringResource(
-                    if (mode == TuningMode.AUTO) R.string.mode_auto else R.string.mode_manual
+                    when (mode) {
+                        TuningMode.AUTO -> R.string.mode_auto
+                        TuningMode.MANUAL -> R.string.mode_manual
+                        TuningMode.CHROMATIC -> R.string.mode_chromatic
+                    }
                 ),
-                subtitle = stringResource(
+                subtitle = if (mode == TuningMode.CHROMATIC)
+                    stringResource(R.string.chromatic_subtitle) else stringResource(
                     R.string.tuning_instrument_preset_subtitle,
                     stringResource(R.string.instrument_acoustic),
                     preset.localizedName()
@@ -117,7 +122,9 @@ fun TuneScreen(
                  */
 
                 Text(
-                    text = formatNote(selectedString.note, settings.notationSystem),
+                    text = if (mode == TuningMode.CHROMATIC && detectedPitch == null)
+                        stringResource(R.string.no_signal)
+                    else formatNote(selectedString.note, settings.notationSystem),
                     fontSize = 64.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -173,7 +180,7 @@ fun TuneScreen(
                     text = when {
 
                         detectedPitch == null -> {
-                            stringResource(R.string.play_string)
+                            stringResource(if (mode == TuningMode.CHROMATIC) R.string.play_note else R.string.play_string)
                         }
 
                         isInTune -> {
@@ -244,40 +251,43 @@ fun TuneScreen(
                         )
                     ) {
 
-                        Text(
-                            text = stringResource(
-                                if (mode == TuningMode.AUTO) R.string.tuning_strings_auto
-                                else R.string.tuning_strings_manual
-                            ),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.semantics { heading() }
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        if (mode != TuningMode.CHROMATIC) {
+                            Text(
+                                text = stringResource(
+                                    if (mode == TuningMode.AUTO) R.string.tuning_strings_auto
+                                    else R.string.tuning_strings_manual
+                                ),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.semantics { heading() }
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
 
-                            guitarStrings.forEach { guitarString ->
+                                guitarStrings.forEach { guitarString ->
 
-                                GuitarStringButton(
-                                    note = formatNote(guitarString.note, settings.notationSystem),
-                                    selected =
-                                        guitarString.id == selectedStringId,
-                                    enabled = mode == TuningMode.MANUAL,
-                                    onClick = {
-                                        onSelectString(guitarString.id)
-                                    }
-                                )
+                                    GuitarStringButton(
+                                        note = formatNote(guitarString.note, settings.notationSystem),
+                                        selected =
+                                            guitarString.id == selectedStringId,
+                                        enabled = mode == TuningMode.MANUAL,
+                                        onClick = {
+                                            onSelectString(guitarString.id)
+                                        }
+                                    )
+                                }
                             }
-                        }
 
-                        Spacer(
-                            modifier = Modifier.height(20.dp)
-                        )
+                            Spacer(
+                                modifier = Modifier.height(20.dp)
+                            )
+
+                        }
 
                         /*
                          * Confidence reported by Tarsos for the retained reading.
