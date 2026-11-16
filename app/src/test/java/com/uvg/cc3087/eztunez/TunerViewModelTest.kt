@@ -27,8 +27,8 @@ class TunerViewModelTest {
         viewModel = ViewModelProvider(
             store,
             TunerViewModel.Factory(
-                PitchCaptureFactory { threshold, reference, preset, onPitch, onState, algorithm ->
-                    FakeCapture(threshold, reference, onPitch, onState, preset, algorithm).also(captures::add)
+                PitchCaptureFactory { threshold, reference, preset, onPitch, onState, algorithm, mode ->
+                    FakeCapture(threshold, reference, onPitch, onState, preset, algorithm, mode).also(captures::add)
                 },
                 nowMs = { now }
             )
@@ -272,7 +272,7 @@ class TunerViewModelTest {
         // Before MVVM, TuneScreen passed each analyzed frame directly to TuningTracker
         // on the main thread. Compare that path to the ViewModel after every callback,
         // including audio below the RMS gate and quiet notes above it.
-        for (mode in TuningMode.entries) {
+        for (mode in listOf(TuningMode.AUTO, TuningMode.MANUAL)) {
             for (reference in listOf(440, 432)) {
                 for (target in guitarStringsForReference(reference)) {
                     for (amplitude in listOf(0.0002f, 0.0006f, 0.001f)) {
@@ -341,6 +341,27 @@ class TunerViewModelTest {
         assertTrue(viewModel.uiState.value.tuning.isInTune)
     }
 
+    @Test fun chromaticSessionRequestsWideRangeCapture() {
+        start(TuningMode.CHROMATIC)
+        assertEquals(TuningMode.CHROMATIC, captures.single().mode)
+        play(987.7666f)
+        assertEquals("B5", viewModel.uiState.value.tuning.selectedString.note)
+        assertTrue(viewModel.uiState.value.tuning.isInTune)
+    }
+
+    @Test fun switchingFromChromaticToGuitarDiscardsTheOldMeasurement() {
+        start(TuningMode.CHROMATIC)
+        play(987.7666f)
+        val oldCapture = captures.single()
+        start(TuningMode.AUTO)
+        oldCapture.onPitch(convertFrequency(987.7666f, 0.99f))
+        dispatcher.scheduler.runCurrent()
+        assertNull(viewModel.uiState.value.tuning.pitch)
+        play(110f)
+        assertEquals("A2", viewModel.uiState.value.tuning.selectedString.note)
+        assertTrue(viewModel.uiState.value.tuning.isInTune)
+    }
+
     private fun start(mode: TuningMode) {
         viewModel.configure(mode, 440)
         viewModel.startListening(DEFAULT_MIC_SENSITIVITY)
@@ -361,7 +382,8 @@ class TunerViewModelTest {
         val onPitch: (DetectedPitch?) -> Unit,
         val onState: (MicrophoneState) -> Unit,
         val preset: TuningPreset,
-        val algorithm: DetectionAlgorithm
+        val algorithm: DetectionAlgorithm,
+        val mode: TuningMode
     ) : PitchCapture {
         var starts = 0
         var stops = 0

@@ -39,8 +39,6 @@ fun HomeScreen(
     }
 
     val changeInstrumentMessage = stringResource(R.string.change_instrument)
-    val chromaticMessage = stringResource(R.string.chromatic_coming_soon)
-    val metronomeMessage = stringResource(R.string.metronome_coming_soon)
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -269,44 +267,11 @@ fun HomeScreen(
                     modifier = Modifier.height(12.dp)
                 )
 
-                //chromatic
-
                 HomeModeCard(
                     title = stringResource(R.string.mode_chromatic),
                     description = stringResource(R.string.mode_chromatic_description),
                     symbol = stringResource(R.string.symbol_chromatic),
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = chromaticMessage,
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                    }
-                )
-
-                Spacer(
-                    modifier = Modifier.height(12.dp)
-                )
-
-                /*
-                 * ============================
-                 * METRONOME
-                 * ============================
-                 */
-
-                HomeModeCard(
-                    title = stringResource(R.string.metronome),
-                    description = stringResource(R.string.metronome_description),
-                    symbol = stringResource(R.string.symbol_auto),
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = metronomeMessage,
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                    }
+                    onClick = { onStartTuning(TuningMode.CHROMATIC) }
                 )
             }
         }

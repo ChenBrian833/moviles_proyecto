@@ -5,7 +5,7 @@ import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-enum class TuningMode { AUTO, MANUAL }
+enum class TuningMode { AUTO, MANUAL, CHROMATIC }
 
 data class GuitarString(val id: Int, val note: String, val frequency: Float)
 
@@ -59,7 +59,8 @@ class TuningTracker(
 ) {
     private val referencePitch = normalizeReferencePitch(referencePitch)
     private val guitarStrings = preset.guitarStrings(this.referencePitch)
-    private val acceptedFrequencies = preset.captureFrequencyRange(this.referencePitch)
+    private val acceptedFrequencies = if (mode == TuningMode.CHROMATIC)
+        ChromaticScale.frequencyRange else preset.captureFrequencyRange(this.referencePitch)
 
     var state = TuningState(selectedString = guitarStrings.first())
         private set
@@ -164,10 +165,12 @@ class TuningTracker(
             }
         }
 
+        if (mode == TuningMode.CHROMATIC) target = ChromaticScale.nearestNote(frequency, referencePitch)
+
         state = TuningState(
             selectedString = target,
-            pitch = convertFrequency(frequency, pitch.probability, referencePitch, preset.preferFlats),
-            // Always compare to the target string, not to the nearest chromatic note.
+            pitch = convertFrequency(frequency, pitch.probability, referencePitch, mode != TuningMode.CHROMATIC && preset.preferFlats),
+            // Guitar modes retain their string target; chromatic mode follows the nearest semitone.
             cents = centsFrom(frequency, target.frequency)
         )
         return state

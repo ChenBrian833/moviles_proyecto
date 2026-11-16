@@ -27,8 +27,8 @@ class MainActivity : AppCompatActivity() {
         val appContext = applicationContext
         TunerViewModel.Factory(
             captureFactory = QueuedPitchCaptureFactory(
-                PitchCaptureFactory { threshold, reference, preset, onPitch, onState, algorithm ->
-                    GuitarPitchDetector(appContext, threshold, reference, onPitch, onState, preset, algorithm)
+                PitchCaptureFactory { threshold, reference, preset, onPitch, onState, algorithm, mode ->
+                    GuitarPitchDetector(appContext, threshold, reference, onPitch, onState, preset, algorithm, mode)
                 }
             ),
             nowMs = android.os.SystemClock::elapsedRealtime
@@ -67,16 +67,12 @@ class MainActivity : AppCompatActivity() {
                 darkTheme = settings?.darkTheme ?: true,
                 dynamicColor = false
             ) {
-                if (settings == null) {
-                    LoadingScreen()
-                } else {
-                    App(
-                        settings = settings,
-                        settingsViewModel = settingsViewModel,
-                        tunerViewModel = tunerViewModel,
-                        presetsViewModel = presetsViewModel
-                    )
-                }
+                App(
+                    settings = settings,
+                    settingsViewModel = settingsViewModel,
+                    tunerViewModel = tunerViewModel,
+                    presetsViewModel = presetsViewModel
+                )
             }
         }
     }
@@ -84,7 +80,7 @@ class MainActivity : AppCompatActivity() {
 
 @Composable
 fun App(
-    settings: TunerSettings,
+    settings: TunerSettings?,
     settingsViewModel: SettingsViewModel,
     tunerViewModel: TunerViewModel,
     presetsViewModel: TuningPresetsViewModel
@@ -109,8 +105,14 @@ fun App(
         }
     }
 
-    if (presetsState.isLoading || presetsState.loadFailed) {
-        PresetLoadStatus(presetsState.loadFailed, presetsViewModel::reload)
+    // Both sources begin loading at startup and share the same loading UI.
+    // Navigation state above stays in composition throughout loading and retries.
+    if (settings == null || presetsState.isLoading) {
+        LoadingScreen()
+        return
+    }
+    if (presetsState.loadFailed) {
+        PresetLoadError(presetsViewModel::reload)
         return
     }
 
@@ -144,12 +146,12 @@ fun App(
 }
 
 @Composable
-private fun PresetLoadStatus(failed: Boolean, onRetry: () -> Unit) {
+private fun PresetLoadError(onRetry: () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(stringResource(if (failed) R.string.custom_load_error else R.string.custom_loading))
-            if (failed) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            Text(stringResource(R.string.custom_load_error))
+            TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
         }
     }
 }

@@ -13,6 +13,7 @@ fun interface PitchCaptureFactory {
         preset: TuningPreset,
         onPitchDetected: (DetectedPitch?) -> Unit,
         onStateChanged: (MicrophoneState) -> Unit,
-        algorithm: DetectionAlgorithm
+        algorithm: DetectionAlgorithm,
+        mode: TuningMode
     ): PitchCapture
 }

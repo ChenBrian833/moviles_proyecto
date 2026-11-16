@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="loading_settings">Загрузка настроек…</string>
+    <string name="loading_settings">Загрузка…</string>
     <string name="settings_save_error">Не удалось сохранить настройки. Изменения действуют, но могут быть потеряны при закрытии приложения.</string>
     <string name="retry_save">Повторить сохранение</string>
     <string name="tuning_strings_auto">Автоматический выбор струны</string>
@@ -21,7 +21,6 @@
     <string name="mode_manual_description">Выбирайте и настраивайте каждую струну</string>
     <string name="mode_chromatic">Хроматический тюнер</string>
     <string name="mode_chromatic_description">Настройка любой из 12 хроматических нот</string>
-    <string name="chromatic_coming_soon">Хроматический тюнер скоро появится</string>
     <string name="metronome">Метроном</string>
     <string name="metronome_description">Держите ритм с помощью визуальных и звуковых сигналов</string>
     <string name="metronome_coming_soon">Метроном скоро появится</string>
@@ -107,4 +106,6 @@
     <string name="app_language">Язык</string>
     <string name="language_summary">Используйте язык устройства или выберите язык для EzTunez.</string>
     <string name="language_system">Как в системе</string>
+    <string name="chromatic_subtitle">Все ноты • Независимо от пресета настройки</string>
+    <string name="play_note">Сыграйте ноту</string>
 </resources>

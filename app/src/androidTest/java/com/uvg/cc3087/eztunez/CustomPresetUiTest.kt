@@ -35,7 +35,7 @@ class CustomPresetUiTest {
                 RoomTuningPresetRepository(database, listOf("Standard", "Drop D"))
             ))[TuningPresetsViewModel::class.java]
             tuner = ViewModelProvider(store, TunerViewModel.Factory(
-                PitchCaptureFactory { _, _, preset, _, onState, _ ->
+                PitchCaptureFactory { _, _, preset, _, onState, _, _ ->
                     captures += preset
                     object : PitchCapture {
                         override fun start() { onState(MicrophoneState.LISTENING) }
